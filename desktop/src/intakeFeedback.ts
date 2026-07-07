@@ -3,7 +3,7 @@ import type { IntakeResponse } from "./types";
 export type IntakeFeedback = {
   message: string;
   tone: "info" | "warning";
-  targetView: "today" | "inbox";
+  targetView: "schedule" | "control";
   highlightInboxItemId?: string;
   actionLabel: string;
 };
@@ -18,41 +18,41 @@ export function summarizeIntakeResponse(response: IntakeResponse): IntakeFeedbac
   const inboxId = response.inbox_item.id;
   if (response.extracted_tasks.length > 0) {
     return {
-      message: `识别到 ${response.extracted_tasks.length} 个任务草稿，请到主窗口确认。`,
+      message: `已识别 ${response.extracted_tasks.length} 个 DDL，正在加入日程。`,
       tone: "info",
-      targetView: "today",
+      targetView: "schedule",
       highlightInboxItemId: inboxId,
-      actionLabel: "查看草稿",
+      actionLabel: "看日程",
     };
   }
 
   if (response.inbox_item.status === "duplicate") {
     return {
-      message: "这份内容与已有 Inbox 记录重复，已保留去重记录，不会重复生成任务。",
+      message: "这份内容已处理过，不会重复生成日程。",
       tone: "warning",
-      targetView: "inbox",
+      targetView: "control",
       highlightInboxItemId: inboxId,
-      actionLabel: "定位 Inbox",
+      actionLabel: "看记录",
     };
   }
 
   if (response.inbox_item.status === "failed") {
-    const message = response.inbox_item.error_message || "文件已进入 Inbox，但解析或抽取失败，请在 Inbox 查看原因。";
+    const message = response.inbox_item.error_message || "文件解析或识别失败。";
     return {
-      message: `${message} 可在 Inbox 点击重试。`,
+      message: `${message} 可在控制中心重试。`,
       tone: "warning",
-      targetView: "inbox",
+      targetView: "control",
       highlightInboxItemId: inboxId,
-      actionLabel: "定位 Inbox",
+      actionLabel: "看记录",
     };
   }
 
   return {
-    message: "文件已进入 Inbox，但没有识别到可确认任务。可在 Inbox 中补充信息后重新抽取。",
+    message: "没有识别到明确 DDL，可在控制中心查看输入记录。",
     tone: "warning",
-    targetView: "inbox",
+    targetView: "control",
     highlightInboxItemId: inboxId,
-    actionLabel: "定位 Inbox",
+    actionLabel: "看记录",
   };
 }
 

@@ -95,7 +95,7 @@ const MAX_RETRY_COUNT = 3;
 
 export const PET_STATE_LABELS: Record<string, string> = {
   no_task: "休息中",
-  processing: "等待确认",
+  processing: "识别中",
   idle: "陪伴中",
   missing_info: "信息不完整",
   deadline_near: "DDL 接近",
@@ -106,8 +106,8 @@ export const PET_STATE_LABELS: Record<string, string> = {
 export const petActionDescriptors: PetActionDescriptor[] = [
   {
     id: "open-main",
-    title: "打开 DueFlow",
-    description: "显示主工作台窗口。",
+    title: "打开日程",
+    description: "显示轻量日程窗口。",
     requiresDesktopRuntime: true,
     cooldownMs: 1_000,
     retryCount: 1,
@@ -116,7 +116,7 @@ export const petActionDescriptors: PetActionDescriptor[] = [
   {
     id: "quick-input",
     title: "快速输入",
-    description: "打开主窗口并聚焦 DDL 输入框。",
+    description: "打开日程窗口并聚焦 DDL 输入框。",
     requiresDesktopRuntime: false,
     cooldownMs: 800,
     retryCount: 0,

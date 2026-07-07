@@ -134,7 +134,7 @@ export const builtInSkillManifests: SkillManifest[] = [
       {
         id: "intake.pet-drop-file",
         title: "桌宠文件拖拽识别",
-        description: "拖文件到桌宠后进入 Inbox 和草稿确认流。",
+        description: "拖文件到桌宠后自动识别 DDL 并加入日程。",
         permissions: ["intake.file", "desktop.window", "notify.notice"],
         actionId: "pet-drop-file",
       },

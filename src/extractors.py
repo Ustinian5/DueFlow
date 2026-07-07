@@ -33,7 +33,7 @@ def _task_from_payload(inbox_item_id: str, raw: dict[str, Any]) -> TaskItem:
         confidence = "low"
     return TaskItem(
         inbox_item_id=inbox_item_id,
-        title=str(raw.get("title") or "待确认任务"),
+        title=str(raw.get("title") or "未命名 DDL"),
         description=str(raw.get("description") or ""),
         deadline=deadline,
         deadline_confidence=str(confidence),

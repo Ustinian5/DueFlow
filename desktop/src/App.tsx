@@ -3,13 +3,11 @@ import type { DragEvent, RefObject } from "react";
 import { isPermissionGranted } from "@tauri-apps/plugin-notification";
 import {
   AlertTriangle,
-  CalendarDays,
   Check,
   ClipboardPaste,
   Clock3,
   Download,
   FileText,
-  Inbox,
   LayoutDashboard,
   Loader2,
   Pencil,
@@ -19,7 +17,6 @@ import {
   UploadCloud,
 } from "lucide-react";
 import {
-  confirmTasks,
   createDatabaseBackup,
   createDiagnosticsExport,
   createExport,
@@ -36,9 +33,10 @@ import {
   updateTask,
   updateTaskStatus,
 } from "./api";
-import { emitNoticeToPet, listenForDesktopIntake } from "./desktopBridge";
+import { emitNoticeToPet, listenForDesktopIntake, listenForDesktopNavigate } from "./desktopBridge";
 import { dueFlowEvents, QUICK_INPUT_TAURI_EVENT } from "./eventBus";
 import { summarizeIntakeResponse } from "./intakeFeedback";
+import { startWindowDrag } from "./windowDrag";
 import {
   auditLocalPetAppearances,
   builtInPetManifest,
@@ -82,16 +80,11 @@ import {
 import type { LocalSkillAuditEntry, LocalSkillPreferenceState, LocalSkillScanResult, VisibleSkillAction } from "./skillRegistry";
 import type { BackendStatus, DatabaseBackupResult, DesktopAbout, DesktopConfig, DiagnosticsExportResult, ExportResult, IntakeResponse, Overview, PlanItem, RiskItem, SelfCheckResult, TaskItem } from "./types";
 
-type ViewKey = "today" | "week" | "calendar" | "risks" | "inbox" | "exports" | "settings";
+type ViewKey = "schedule" | "control";
 
 const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }> = [
-  { key: "today", label: "今日", icon: LayoutDashboard },
-  { key: "week", label: "本周", icon: Clock3 },
-  { key: "calendar", label: "日历", icon: CalendarDays },
-  { key: "risks", label: "风险", icon: AlertTriangle },
-  { key: "inbox", label: "Inbox", icon: Inbox },
-  { key: "exports", label: "导出", icon: Download },
-  { key: "settings", label: "设置", icon: SettingsIcon },
+  { key: "schedule", label: "日程", icon: LayoutDashboard },
+  { key: "control", label: "控制中心", icon: SettingsIcon },
 ];
 
 const sourceOptions = [
@@ -103,12 +96,10 @@ const sourceOptions = [
 
 export function App() {
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [activeView, setActiveView] = useState<ViewKey>("today");
+  const [activeView, setActiveView] = useState<ViewKey>("schedule");
   const [title, setTitle] = useState("课程通知");
   const [content, setContent] = useState("");
   const [sourceType, setSourceType] = useState("manual");
-  const [draftResponse, setDraftResponse] = useState<IntakeResponse | null>(null);
-  const [drafts, setDrafts] = useState<TaskItem[]>([]);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTasks, setEditingTasks] = useState<TaskItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,6 +123,7 @@ export function App() {
   const [isConfigLoading, setIsConfigLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null);
   const [backendStatusError, setBackendStatusError] = useState<string | null>(null);
+  const [scheduleSurfaceMode, setScheduleSurfaceMode] = useState<string>("floating");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const contentInputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -164,6 +156,7 @@ export function App() {
     void loadInitialOverview();
     void refreshConfig();
     void refreshBackendStatus();
+    void refreshScheduleSurfaceMode();
 
     return () => {
       isCancelled = true;
@@ -226,19 +219,37 @@ export function App() {
     let unlistenDesktopIntake: (() => void) | undefined;
 
     void listenForDesktopIntake(({ response, targetView, highlightInboxItemId }) => {
-      setActiveView(targetView ?? (response.extracted_tasks.length ? "today" : "inbox"));
+      setActiveView(targetView ?? (response.extracted_tasks.length ? "schedule" : "control"));
       setHighlightedInboxItemId(highlightInboxItemId ?? response.inbox_item.id);
       setError(null);
       setNotice(null);
       setEditingTaskId(null);
       setEditingTasks([]);
-      void applyIntakeResponse(response, "文件已进入 Inbox，但没有识别到可确认的任务草稿。", { preserveView: true });
+      void applyIntakeResponse(response, "没有识别到明确 DDL，可在控制中心查看原始输入。", { preserveView: true });
     }).then((cleanup) => {
       unlistenDesktopIntake = cleanup;
     });
 
     return () => {
       unlistenDesktopIntake?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    let unlistenDesktopNavigate: (() => void) | undefined;
+
+    void listenForDesktopNavigate(({ targetView }) => {
+      setActiveView(targetView);
+      setEditingTaskId(null);
+      setEditingTasks([]);
+      setError(null);
+      setNotice(null);
+    }).then((cleanup) => {
+      unlistenDesktopNavigate = cleanup;
+    });
+
+    return () => {
+      unlistenDesktopNavigate?.();
     };
   }, []);
 
@@ -288,10 +299,30 @@ export function App() {
     }
   }
 
+  async function refreshScheduleSurfaceMode() {
+    if (!isTauriRuntime()) {
+      setScheduleSurfaceMode("browser");
+      return;
+    }
+    try {
+      setScheduleSurfaceMode(await invokeDesktopCommand<string>("get_schedule_surface_mode"));
+    } catch {
+      setScheduleSurfaceMode("floating");
+    }
+  }
+
+  function expandScheduleSurface() {
+    if (scheduleSurfaceMode !== "windows_drawer") return;
+    void invokeDesktopCommand<void>("expand_schedule_window");
+  }
+
+  function collapseScheduleSurface() {
+    if (scheduleSurfaceMode !== "windows_drawer") return;
+    void invokeDesktopCommand<void>("collapse_schedule_window");
+  }
+
   function focusQuickInput() {
-    setActiveView("today");
-    setDraftResponse(null);
-    setDrafts([]);
+    setActiveView("schedule");
     setEditingTaskId(null);
     setEditingTasks([]);
     dueFlowEvents.publish("notice.show", { message: "快速输入已就绪。", tone: "info" });
@@ -302,16 +333,15 @@ export function App() {
     setOverview((current) => (current ? { ...current, pet_state: response.pet_state } : current));
     setHighlightedInboxItemId(response.inbox_item.id);
     if (response.extracted_tasks.length > 0) {
-      if (!options.preserveView) setActiveView("today");
-      setDraftResponse(response);
-      setDrafts(response.extracted_tasks);
+      setContent("");
       setNotice(null);
+      if (!options.preserveView) setActiveView("schedule");
+      dueFlowEvents.publish("notice.show", { message: `已自动加入 ${response.extracted_tasks.length} 条 DDL。`, tone: "success" });
+      await refresh("confirm");
       return;
     }
 
-    setDraftResponse(null);
-    setDrafts([]);
-    if (!options.preserveView) setActiveView("inbox");
+    if (!options.preserveView) setActiveView("control");
     const feedback = summarizeIntakeResponse(response);
     dueFlowEvents.publish("notice.show", {
       message: response.inbox_item.status === "pending" ? emptyMessage : feedback.message,
@@ -331,7 +361,7 @@ export function App() {
         source_type: sourceType,
         auto_extract: true,
       });
-      await applyIntakeResponse(response, "没有识别到可确认的任务草稿，请补充更明确的截止时间或提交要求。");
+      await applyIntakeResponse(response, "没有识别到明确 DDL，请补充截止时间或提交要求。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "抽取失败");
     } finally {
@@ -345,7 +375,7 @@ export function App() {
     setNotice(null);
     try {
       const response = await intakeFile(file, true);
-      await applyIntakeResponse(response, "文件已进入 Inbox，但没有识别到可确认的任务草稿。");
+      await applyIntakeResponse(response, "文件已记录，但没有识别到明确 DDL。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "文件识别失败");
     } finally {
@@ -363,7 +393,7 @@ export function App() {
     setNotice(null);
     try {
       const response = await extractInboxItem(inboxItemId);
-      await applyIntakeResponse(response, "这个 Inbox 项没有识别到可确认的任务草稿。");
+      await applyIntakeResponse(response, "这个输入没有识别到明确 DDL。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inbox 抽取失败");
     } finally {
@@ -372,33 +402,11 @@ export function App() {
   }
 
   function focusInboxItem(inboxItemId: string) {
-    setActiveView("inbox");
+    setActiveView("control");
     setHighlightedInboxItemId(inboxItemId);
   }
 
-  async function handleConfirm() {
-    if (!draftResponse || drafts.length === 0) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      await confirmTasks({
-        inbox_item_id: draftResponse.inbox_item.id,
-        tasks: drafts,
-      });
-      setDraftResponse(null);
-      setDrafts([]);
-      setContent("");
-      await refresh("confirm");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "确认入库失败");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   function beginEditTask(task: TaskItem) {
-    setDraftResponse(null);
-    setDrafts([]);
     setNotice(null);
     setEditingTaskId(task.id);
     setEditingTasks([{ ...task, deliverables: [...task.deliverables], missing_info: [...task.missing_info] }]);
@@ -509,9 +517,13 @@ export function App() {
   const highRisks = risks.filter((risk) => risk.severity === "high");
 
   return (
-    <main className="shell">
-      <aside className="sidebar">
-        <div className="brand">
+    <main
+      className={`shell ${scheduleSurfaceMode}`}
+      onMouseEnter={expandScheduleSurface}
+      onMouseLeave={collapseScheduleSurface}
+    >
+      <aside className="sidebar" onPointerDown={(event) => void startWindowDrag(event)}>
+        <div className="brand" data-tauri-drag-region>
           <div className="brand-mark">D</div>
           <div>
             <strong>DueFlow</strong>
@@ -534,15 +546,13 @@ export function App() {
             );
           })}
         </nav>
-
-        <PetPanel overview={overview} />
       </aside>
 
       <section className="workspace">
-        <header className="topbar">
-          <div>
-            <h1>DDL 工作台</h1>
-            <p>从通知里抽取任务，确认后自动排期并驱动桌宠状态。</p>
+        <header className="topbar" onPointerDown={(event) => void startWindowDrag(event)}>
+          <div data-tauri-drag-region>
+            <h1>{activeView === "schedule" ? "DDL 清单" : "控制中心"}</h1>
+            <p>{activeView === "schedule" ? "只显示最需要关注的截止事项。" : "必要设置、少量修正和基础排错。"}</p>
           </div>
           <button className="icon-button" onClick={() => void refresh("refresh")} title="刷新">
             <RefreshCw size={18} />
@@ -562,53 +572,15 @@ export function App() {
           </div>
         )}
 
-        <section className="metrics-grid">
-          <Metric label="待办任务" value={activeTasks.length} />
-          <Metric label="今日计划" value={todayPlans.length} />
-          <Metric label="本周计划" value={weekPlans.length} />
-          <Metric label="高风险" value={highRisks.length} tone={highRisks.length ? "danger" : "normal"} />
-        </section>
-
-        <section className="content-grid">
+        <section className="content-grid compact-product">
           <div className="primary-column">
-            <IntakePanel
-              title={title}
-              content={content}
-              sourceType={sourceType}
-              isLoading={isLoading}
-              isDraggingFile={isDraggingFile}
-              fileInputRef={fileInputRef}
-              contentInputRef={contentInputRef}
-              onTitleChange={setTitle}
-              onContentChange={setContent}
-              onSourceChange={setSourceType}
-              onExtract={() => void handleExtract()}
-              onFile={(file) => void handleFile(file)}
-              onFileDrag={setIsDraggingFile}
-            />
-            {draftResponse && (
-              <TaskFormPanel
-                drafts={drafts}
-                inboxTitle={draftResponse.inbox_item.title}
-                mode="confirm"
-                isLoading={isLoading}
-                onDraftsChange={setDrafts}
-                onConfirm={() => void handleConfirm()}
-                onCancel={() => {
-                  setDraftResponse(null);
-                  setDrafts([]);
-                  setNotice(null);
-                }}
-              />
-            )}
             {editingTaskId && (
-              <TaskFormPanel
-                drafts={editingTasks}
+              <TaskEditPanel
+                tasks={editingTasks}
                 inboxTitle="编辑任务"
-                mode="edit"
                 isLoading={isLoading}
-                onDraftsChange={setEditingTasks}
-                onConfirm={() => void handleSaveEdit()}
+                onTasksChange={setEditingTasks}
+                onSave={() => void handleSaveEdit()}
                 onCancel={() => {
                   setEditingTaskId(null);
                   setEditingTasks([]);
@@ -652,10 +624,24 @@ export function App() {
               }}
               onStatus={(taskId, status) => void handleStatus(taskId, status)}
             />
+            {activeView === "schedule" && (
+              <IntakePanel
+                title={title}
+                content={content}
+                sourceType={sourceType}
+                isLoading={isLoading}
+                isDraggingFile={isDraggingFile}
+                fileInputRef={fileInputRef}
+                contentInputRef={contentInputRef}
+                onTitleChange={setTitle}
+                onContentChange={setContent}
+                onSourceChange={setSourceType}
+                onExtract={() => void handleExtract()}
+                onFile={(file) => void handleFile(file)}
+                onFileDrag={setIsDraggingFile}
+              />
+            )}
           </div>
-          <aside className="detail-column">
-            <FocusPanel tasks={activeTasks} plans={weekPlans} risks={risks} onEditTask={beginEditTask} />
-          </aside>
         </section>
       </section>
     </main>
@@ -706,8 +692,8 @@ function IntakePanel(props: {
     <section className="panel intake-panel">
       <div className="panel-title">
         <div>
-          <h2>快速输入</h2>
-          <p>粘贴通知、截图 OCR 文本，或拖入 .txt / .md / .pdf / 图片文件。</p>
+          <h2>快速添加</h2>
+          <p>粘贴文字或拖入文件，系统会自动识别并加入日程。</p>
         </div>
         <ClipboardPaste size={22} />
       </div>
@@ -739,7 +725,7 @@ function IntakePanel(props: {
         <UploadCloud size={22} />
         <div>
           <strong>拖拽文件到这里</strong>
-          <span>.txt / .md / .pdf / 截图图片会先解析成草稿，确认后才入库。</span>
+          <span>.txt / .md / .pdf / 截图图片会自动识别 DDL。</span>
         </div>
         <button type="button" className="secondary-action" onClick={() => props.fileInputRef.current?.click()}>
           选择文件
@@ -759,47 +745,46 @@ function IntakePanel(props: {
       </div>
       <button className="primary-action" onClick={props.onExtract} disabled={props.isLoading || !props.content.trim()}>
         {props.isLoading ? <Loader2 className="spin" size={18} /> : <FileText size={18} />}
-        <span>抽取 DDL 信息</span>
+        <span>快速添加</span>
       </button>
     </section>
   );
 }
 
-function TaskFormPanel(props: {
-  drafts: TaskItem[];
+function TaskEditPanel(props: {
+  tasks: TaskItem[];
   inboxTitle: string;
-  mode: "confirm" | "edit";
   isLoading: boolean;
-  onDraftsChange: (drafts: TaskItem[]) => void;
-  onConfirm: () => void;
+  onTasksChange: (tasks: TaskItem[]) => void;
+  onSave: () => void;
   onCancel: () => void;
 }) {
-  function updateDraft(index: number, patch: Partial<TaskItem>) {
-    props.onDraftsChange(props.drafts.map((draft, itemIndex) => (itemIndex === index ? { ...draft, ...patch } : draft)));
+  function updateTask(index: number, patch: Partial<TaskItem>) {
+    props.onTasksChange(props.tasks.map((task, itemIndex) => (itemIndex === index ? { ...task, ...patch } : task)));
   }
 
   return (
-    <section className="panel draft-panel">
+    <section className="panel task-edit-panel">
       <div className="panel-title">
         <div>
-          <h2>{props.mode === "confirm" ? "确认识别结果" : "编辑任务"}</h2>
+          <h2>编辑任务</h2>
           <p>{props.inboxTitle}</p>
         </div>
         <ShieldCheck size={22} />
       </div>
 
-      {props.drafts.map((draft, index) => (
-        <div className="draft-editor" key={`${draft.title}-${index}`}>
+      {props.tasks.map((task, index) => (
+        <div className="task-editor" key={`${task.title}-${index}`}>
           <label>
             任务名称
-            <input value={draft.title} onChange={(event) => updateDraft(index, { title: event.target.value })} />
+            <input value={task.title} onChange={(event) => updateTask(index, { title: event.target.value })} />
           </label>
           <label>
             描述
             <textarea
               className="compact-textarea"
-              value={draft.description}
-              onChange={(event) => updateDraft(index, { description: event.target.value })}
+              value={task.description}
+              onChange={(event) => updateTask(index, { description: event.target.value })}
               placeholder="任务背景、目标或范围"
             />
           </label>
@@ -807,16 +792,16 @@ function TaskFormPanel(props: {
             <label>
               截止时间
               <input
-                value={draft.deadline ?? ""}
-                onChange={(event) => updateDraft(index, { deadline: event.target.value || null })}
+                value={task.deadline ?? ""}
+                onChange={(event) => updateTask(index, { deadline: event.target.value || null })}
                 placeholder="2026-06-30 23:59"
               />
             </label>
             <label>
               截止时间置信度
               <select
-                value={draft.deadline_confidence}
-                onChange={(event) => updateDraft(index, { deadline_confidence: event.target.value })}
+                value={task.deadline_confidence}
+                onChange={(event) => updateTask(index, { deadline_confidence: event.target.value })}
               >
                 <option value="high">high</option>
                 <option value="medium">medium</option>
@@ -827,7 +812,7 @@ function TaskFormPanel(props: {
           <div className="input-row">
             <label>
               优先级
-              <select value={draft.priority} onChange={(event) => updateDraft(index, { priority: event.target.value })}>
+              <select value={task.priority} onChange={(event) => updateTask(index, { priority: event.target.value })}>
                 <option value="high">high</option>
                 <option value="medium">medium</option>
                 <option value="low">low</option>
@@ -836,8 +821,8 @@ function TaskFormPanel(props: {
             <label>
               地点/平台
               <input
-                value={draft.location ?? ""}
-                onChange={(event) => updateDraft(index, { location: event.target.value || null })}
+                value={task.location ?? ""}
+                onChange={(event) => updateTask(index, { location: event.target.value || null })}
                 placeholder="课程平台 / GitHub / 线下地点"
               />
             </label>
@@ -845,43 +830,41 @@ function TaskFormPanel(props: {
           <label>
             提交物
             <input
-              value={draft.deliverables.join("、")}
-              onChange={(event) => updateDraft(index, { deliverables: splitList(event.target.value) })}
+              value={task.deliverables.join("、")}
+              onChange={(event) => updateTask(index, { deliverables: splitList(event.target.value) })}
               placeholder="README.md、PDF、代码仓库"
             />
           </label>
           <label>
             提交方式
             <input
-              value={draft.submit_method ?? ""}
-              onChange={(event) => updateDraft(index, { submit_method: event.target.value || null })}
+              value={task.submit_method ?? ""}
+              onChange={(event) => updateTask(index, { submit_method: event.target.value || null })}
             />
           </label>
           <label>
             缺失信息
             <input
-              value={draft.missing_info.join("、")}
-              onChange={(event) => updateDraft(index, { missing_info: splitList(event.target.value) })}
+              value={task.missing_info.join("、")}
+              onChange={(event) => updateTask(index, { missing_info: splitList(event.target.value) })}
               placeholder="截止时间、提交方式、提交物"
             />
           </label>
-          {props.mode === "edit" && (
-            <label>
-              状态
-              <select value={draft.status} onChange={(event) => updateDraft(index, { status: event.target.value })}>
-                <option value="todo">todo</option>
-                <option value="doing">doing</option>
-                <option value="done">done</option>
-                <option value="archived">archived</option>
-              </select>
-            </label>
-          )}
+          <label>
+            状态
+            <select value={task.status} onChange={(event) => updateTask(index, { status: event.target.value })}>
+              <option value="todo">todo</option>
+              <option value="doing">doing</option>
+              <option value="done">done</option>
+              <option value="archived">archived</option>
+            </select>
+          </label>
           <label>
             原文依据
             <textarea
               className="compact-textarea"
-              value={draft.source_quote}
-              onChange={(event) => updateDraft(index, { source_quote: event.target.value })}
+              value={task.source_quote}
+              onChange={(event) => updateTask(index, { source_quote: event.target.value })}
             />
           </label>
         </div>
@@ -891,9 +874,9 @@ function TaskFormPanel(props: {
         <button className="secondary-action" onClick={props.onCancel}>
           取消
         </button>
-        <button className="primary-action" onClick={props.onConfirm} disabled={props.isLoading || props.drafts.length === 0}>
+        <button className="primary-action" onClick={props.onSave} disabled={props.isLoading || props.tasks.length === 0}>
           <Check size={18} />
-          <span>{props.mode === "confirm" ? "确认入库并排期" : "保存并重新排期"}</span>
+          <span>保存</span>
         </button>
       </div>
     </section>
@@ -937,60 +920,166 @@ function ViewPanel(props: {
   const highlightedInboxRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (props.activeView !== "inbox" || !props.highlightedInboxItemId) return;
+    if (props.activeView !== "control" || !props.highlightedInboxItemId) return;
     const timer = window.setTimeout(() => {
       highlightedInboxRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [props.activeView, props.highlightedInboxItemId]);
 
-  if (props.activeView === "settings") {
+  if (props.activeView === "control") {
     return (
-      <section className="panel">
-        <PanelHeading title="设置与自检" subtitle="检查本地服务、数据目录、OCR、通知和快捷入口。" />
-        <SettingsPanel
-          config={props.config}
-          about={props.about}
-          configError={props.configError}
-          selfCheck={props.selfCheck}
-          selfCheckError={props.selfCheckError}
-          databaseBackup={props.databaseBackup}
-          databaseBackups={props.databaseBackups}
-          isBackingUpDatabase={props.isBackingUpDatabase}
-          restoringDatabaseFileName={props.restoringDatabaseFileName}
-          diagnosticsExport={props.diagnosticsExport}
-          isExportingDiagnostics={props.isExportingDiagnostics}
-          backendStatus={props.backendStatus}
-          backendStatusError={props.backendStatusError}
-          isLoading={props.isConfigLoading}
-          onDatabaseBackup={props.onDatabaseBackup}
-          onDatabaseRestore={props.onDatabaseRestore}
-          onDiagnosticsExport={props.onDiagnosticsExport}
-          onRefresh={props.onRefreshConfig}
-        />
-      </section>
+      <ControlCenterPanel
+        tasks={props.tasks}
+        inbox={props.inbox}
+        highlightedInboxItemId={props.highlightedInboxItemId}
+        highlightedInboxRef={highlightedInboxRef}
+        isLoading={props.isLoading}
+        config={props.config}
+        about={props.about}
+        configError={props.configError}
+        selfCheck={props.selfCheck}
+        selfCheckError={props.selfCheckError}
+        backendStatus={props.backendStatus}
+        backendStatusError={props.backendStatusError}
+        onEditTask={props.onEditTask}
+        onExtractInbox={props.onExtractInbox}
+        onFocusInboxItem={props.onFocusInboxItem}
+        onRefreshConfig={props.onRefreshConfig}
+        onStatus={props.onStatus}
+      />
     );
   }
 
-  if (props.activeView === "risks") {
-    return (
-      <section className="panel">
-        <PanelHeading title="风险任务" subtitle="优先处理高风险和信息缺失的 DDL。" />
-        <RiskList risks={props.risks} tasks={props.tasks} />
-      </section>
-    );
-  }
+  return (
+    <ScheduleList tasks={props.tasks} onEditTask={props.onEditTask} onStatus={props.onStatus} />
+  );
+}
 
-  if (props.activeView === "inbox") {
-    return (
+function ScheduleList({
+  tasks,
+  onEditTask,
+  onStatus,
+}: {
+  tasks: TaskItem[];
+  onEditTask: (task: TaskItem) => void;
+  onStatus: (taskId: string, status: string) => void;
+}) {
+  const ddlItems = tasks
+    .filter((task) => task.status !== "done" && task.status !== "archived")
+    .map((task) => ({ task, meta: deriveDdlMeta(task) }))
+    .sort((left, right) => right.meta.score - left.meta.score)
+    .slice(0, 6);
+
+  return (
+    <section className="panel schedule-panel">
+      <PanelHeading title="极简 DDL 清单" subtitle="按紧急程度和重要性排序，只显示最需要关注的事项。" />
+      <div className="ddl-list">
+        {ddlItems.map(({ task, meta }) => (
+          <article className={`ddl-item ${meta.tone}`} key={task.id} onClick={() => onEditTask(task)}>
+            <div className="ddl-title">
+              <strong>{shortTitle(task.title)}</strong>
+              <span className="importance-pill">{importanceLabel(task.priority)}</span>
+            </div>
+            <time>{formatDeadline(task.deadline)}</time>
+            <span className="remaining-time">{meta.remainingLabel}</span>
+            <button
+              className="complete-check"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onStatus(task.id, "done");
+              }}
+              title="完成"
+            >
+              <Check size={15} />
+            </button>
+          </article>
+        ))}
+        {!ddlItems.length && <EmptyState text="当前没有需要关注的 DDL。" />}
+      </div>
+      {tasks.filter((task) => task.status !== "done" && task.status !== "archived").length > 6 && (
+        <p className="schedule-more">还有更多事项，可进入控制中心查看。</p>
+      )}
+    </section>
+  );
+}
+
+function ControlCenterPanel({
+  tasks,
+  inbox,
+  highlightedInboxItemId,
+  highlightedInboxRef,
+  isLoading,
+  config,
+  about,
+  configError,
+  selfCheck,
+  selfCheckError,
+  backendStatus,
+  backendStatusError,
+  onEditTask,
+  onExtractInbox,
+  onFocusInboxItem,
+  onRefreshConfig,
+  onStatus,
+}: {
+  tasks: TaskItem[];
+  inbox: Overview["inbox"];
+  highlightedInboxItemId: string | null;
+  highlightedInboxRef: RefObject<HTMLDivElement | null>;
+  isLoading: boolean;
+  config: DesktopConfig | null;
+  about: DesktopAbout | null;
+  configError: string | null;
+  selfCheck: SelfCheckResult | null;
+  selfCheckError: string | null;
+  backendStatus: BackendStatus | null;
+  backendStatusError: string | null;
+  onEditTask: (task: TaskItem) => void;
+  onExtractInbox: (inboxItemId: string) => void;
+  onFocusInboxItem: (inboxItemId: string) => void;
+  onRefreshConfig: () => void;
+  onStatus: (taskId: string, status: string) => void;
+}) {
+  const activeTasks = tasks.filter((task) => task.status !== "done" && task.status !== "archived");
+  const recentInbox = inbox.slice(0, 5);
+
+  return (
+    <div className="control-center">
       <section className="panel">
-        <PanelHeading title="Inbox" subtitle="所有输入都会先进入 Inbox，确认后才生成任务。" />
+        <PanelHeading title="事件修正" subtitle="只在自动结果不符合预期时使用。" />
         <div className="row-list">
-          {props.inbox.map((item) => (
+          {activeTasks.slice(0, 8).map((task) => (
+            <div className="data-row compact-event-row" key={task.id}>
+              <div className="row-main">
+                <strong>{shortTitle(task.title)}</strong>
+                <span>{importanceLabel(task.priority)} / {formatDeadline(task.deadline)} / {deriveDdlMeta(task).remainingLabel}</span>
+              </div>
+              <span className="compact-actions">
+                <button className="row-action" onClick={() => onEditTask(task)}>
+                  <Pencil size={15} />
+                  修正
+                </button>
+                <button className="row-action" onClick={() => onStatus(task.id, "done")}>
+                  <Check size={15} />
+                  完成
+                </button>
+              </span>
+            </div>
+          ))}
+          {!activeTasks.length && <EmptyState text="没有需要修正的事件。" />}
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeading title="原始输入" subtitle="保留最近输入，便于重新识别或排查。" />
+        <div className="row-list">
+          {recentInbox.map((item) => (
             <div
-              className={item.id === props.highlightedInboxItemId ? "data-row inbox-row highlighted" : "data-row inbox-row"}
+              className={item.id === highlightedInboxItemId ? "data-row inbox-row highlighted" : "data-row inbox-row"}
               key={item.id}
-              ref={item.id === props.highlightedInboxItemId ? highlightedInboxRef : undefined}
+              ref={item.id === highlightedInboxItemId ? highlightedInboxRef : undefined}
             >
               <div className="row-main">
                 <div className="row-title-line">
@@ -998,62 +1087,61 @@ function ViewPanel(props: {
                   <span className={`status-pill ${item.status}`}>{inboxStatusLabel(item.status)}</span>
                 </div>
                 <span>{item.source_type} / {item.received_at}</span>
-                <p>{item.content.slice(0, 120)}</p>
+                <p>{item.content.slice(0, 96)}</p>
                 {item.error_message && <small className="row-error">{item.error_message}</small>}
-                {item.duplicate_of && (
-                  <small className="duplicate-link">
-                    重复于：{item.duplicate_of.title} / {item.duplicate_of.received_at}
-                  </small>
-                )}
               </div>
               {item.status === "pending" || item.status === "failed" ? (
-                <button className="row-action" disabled={props.isLoading} onClick={() => props.onExtractInbox(item.id)}>
-                  {props.isLoading ? <Loader2 className="spin" size={15} /> : <FileText size={15} />}
-                  {item.status === "failed" ? "重试" : "抽取"}
+                <button className="row-action" disabled={isLoading} onClick={() => onExtractInbox(item.id)}>
+                  {isLoading ? <Loader2 className="spin" size={15} /> : <FileText size={15} />}
+                  重新识别
                 </button>
               ) : item.status === "duplicate" && item.duplicate_of ? (
-                <button className="row-action" type="button" onClick={() => props.onFocusInboxItem(item.duplicate_of!.id)}>
-                  查看原始
+                <button className="row-action" type="button" onClick={() => onFocusInboxItem(item.duplicate_of!.id)}>
+                  原始
                 </button>
-              ) : (
-                <small>{item.status === "duplicate" ? "已去重" : "无需处理"}</small>
-              )}
+              ) : null}
             </div>
           ))}
-          {!props.inbox.length && <EmptyState text="Inbox 暂无输入记录。" />}
+          {!recentInbox.length && <EmptyState text="暂无原始输入。" />}
         </div>
       </section>
-    );
-  }
 
-  if (props.activeView === "exports") {
-    return (
-      <section className="panel">
-        <PanelHeading title="导出" subtitle="生成 Markdown 和日历文件，用于提交、备份或导入日历。" />
-        <ExportGrid
-          exportingType={props.exportingType}
-          results={props.exportResults}
-          onExport={props.onExport}
-        />
+      <section className="panel control-status-panel">
+        <PanelHeading title="基础状态" subtitle="只显示影响日常使用的必要状态。" />
+        <div className="settings-grid compact-control-grid">
+          <section className="settings-card">
+            <div className="settings-card-title">
+              <strong>服务</strong>
+              <button className="row-action" onClick={onRefreshConfig}>
+                <RefreshCw size={15} />
+                刷新
+              </button>
+            </div>
+            <StatusLine label="API" value={configError ? "异常" : config ? "正常" : "读取中"} tone={configError ? "danger" : "normal"} />
+            <StatusLine label="模型" value={config?.llm_provider ?? "-"} />
+            <StatusLine label="OCR" value={ocrModeLabel(config?.ocr_mode)} tone={config?.ocr_mode === "unavailable" ? "danger" : "normal"} />
+            {configError && <p className="settings-error">{configError}</p>}
+          </section>
+          <section className="settings-card">
+            <div className="settings-card-title">
+              <strong>桌面</strong>
+            </div>
+            <StatusLine label="快捷键" value="CommandOrControl+Shift+D" />
+            <StatusLine label="后端" value={backendStatusLabel(backendStatus?.state, backendStatusError)} tone={backendStatusError ? "danger" : "normal"} />
+            <StatusLine label="版本" value={about?.api_version ?? "-"} />
+            {(backendStatusError || selfCheckError) && <p className="settings-error">{backendStatusError ?? selfCheckError}</p>}
+          </section>
+          <section className="settings-card">
+            <div className="settings-card-title">
+              <strong>数据与隐私</strong>
+            </div>
+            <StatusLine label="本地自检" value={selfCheck ? selfCheckStatusLabel(selfCheck) : "读取中"} tone={selfCheck?.status === "error" ? "danger" : "normal"} />
+            <StatusLine label="数据位置" value={config?.database_path ? "本机存储" : "-"} />
+            <p className="settings-note">输入和日程默认保存在本机。复杂备份和诊断不放入日常入口。</p>
+          </section>
+        </div>
       </section>
-    );
-  }
-
-  if (props.activeView === "calendar") {
-    return (
-      <section className="panel">
-        <PanelHeading title="日历" subtitle="未来两周的计划和提交点。" />
-        <CalendarStrip plans={props.plans} />
-      </section>
-    );
-  }
-
-  const filteredPlans = props.activeView === "today" ? props.plans.filter((plan) => plan.date === todayKey()) : props.plans.filter((plan) => isWithinDays(plan.date, 7));
-  return (
-    <section className="panel">
-      <PanelHeading title={props.activeView === "today" ? "今日计划" : "本周计划"} subtitle="按执行顺序排列，可直接标记完成。" />
-  <PlanTimeline plans={filteredPlans} tasks={props.tasks} onEditTask={props.onEditTask} onStatus={props.onStatus} />
-    </section>
+    </div>
   );
 }
 
@@ -1867,7 +1955,7 @@ function PlanTimeline({
         const task = tasks.find((item) => item.id === plan.task_id);
         return (
           <article className={`timeline-item ${plan.type}`} key={plan.id}>
-            <time>{plan.date ?? "待确认"}</time>
+            <time>{plan.date ?? "待定"}</time>
             <div>
               <strong>{plan.title}</strong>
               <p>{plan.description}</p>
@@ -2010,6 +2098,64 @@ function splitList(value: string): string[] {
     .filter(Boolean);
 }
 
+function deriveDdlMeta(task: TaskItem): { tone: "danger" | "urgent" | "normal"; remainingLabel: string; score: number } {
+  const priorityScore = priorityWeight(task.priority);
+  const deadlineTime = parseDeadlineTime(task.deadline);
+  if (!deadlineTime) {
+    return { tone: "normal", remainingLabel: "时间待定", score: priorityScore };
+  }
+
+  const now = Date.now();
+  const diffMs = deadlineTime - now;
+  const diffHours = Math.ceil(diffMs / 3_600_000);
+  const diffDays = Math.ceil(diffMs / 86_400_000);
+
+  if (diffMs <= 0) {
+    return { tone: "danger", remainingLabel: "已逾期", score: 10_000 + priorityScore };
+  }
+  if (diffHours <= 24) {
+    return { tone: "danger", remainingLabel: `剩余 ${Math.max(diffHours, 1)} 小时`, score: 8_000 + priorityScore + (24 - diffHours) };
+  }
+  if (diffDays <= 3) {
+    return { tone: "urgent", remainingLabel: `剩余 ${diffDays} 天`, score: 5_000 + priorityScore + (3 - diffDays) };
+  }
+  return { tone: "normal", remainingLabel: `剩余 ${diffDays} 天`, score: Math.max(0, 1_000 - diffDays) + priorityScore };
+}
+
+function priorityWeight(priority: string): number {
+  if (priority === "high") return 300;
+  if (priority === "medium") return 150;
+  return 50;
+}
+
+function importanceLabel(priority: string): string {
+  if (priority === "high") return "高";
+  if (priority === "medium") return "中";
+  return "低";
+}
+
+function shortTitle(value: string): string {
+  return value.length > 16 ? `${value.slice(0, 15)}...` : value;
+}
+
+function formatDeadline(value: string | null): string {
+  const timestamp = parseDeadlineTime(value);
+  if (!timestamp) return "时间待定";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
+}
+
+function parseDeadlineTime(value: string | null): number | null {
+  if (!value) return null;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const timestamp = new Date(normalized).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -2133,7 +2279,7 @@ function backendSourceLabel(value?: string): string {
 
 function inboxStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    pending: "待确认",
+    pending: "待处理",
     processed: "已入库",
     duplicate: "重复",
     failed: "失败",

@@ -1,18 +1,19 @@
 # Roadmap
 
-This roadmap explains the intended direction for DueFlow without over-promising dates. The project is local-first, desktop-oriented and confirmation-first.
+This roadmap explains the intended direction for DueFlow without over-promising dates. The project is local-first, desktop-oriented and pet-first.
 
 ## Current Focus
 
-- Keep the Tauri desktop workbench and pet overlay stable for local use.
+- Make the desktop pet the primary interaction surface and keep the schedule surface separate from settings.
 - Maintain reliable release gates for Python, React, Tauri, smoke tests and open-source hygiene.
 - Keep OpenPets as reference material only, not as a runtime dependency.
-- Preserve local user data safety through backup, restore, diagnostics privacy and explicit confirmation before task creation.
+- Preserve local user data safety through backup, restore, diagnostics privacy and editable generated schedules.
 
 ## Near-Term Improvements
 
 - Add a real Tauri window-level smoke workflow that can run on a developer machine with visible UI.
 - Improve screenshot capture ergonomics beyond file drag-and-drop, including a native shortcut flow.
+- Implement the Windows side-drawer schedule surface and the macOS desktop-widget schedule surface.
 - Add sample local pet appearance packages for testing and documentation, using original DueFlow-owned assets only.
 - Expand documentation for real model provider setup and OCR command examples.
 - Add richer diagnostics around failed OCR, model-provider errors and desktop backend autostart failures.

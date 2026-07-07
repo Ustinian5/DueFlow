@@ -12,7 +12,7 @@ use std::{
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, Runtime, State,
+    AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State,
 };
 use tauri_plugin_global_shortcut::ShortcutState;
 
@@ -213,6 +213,9 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            expand_schedule_window,
+            collapse_schedule_window,
+            get_schedule_surface_mode,
             toggle_pet_window,
             focus_quick_input_window,
             get_backend_status,
@@ -250,6 +253,7 @@ pub fn run() {
                 }
             }
             setup_tray(app.handle())?;
+            let _ = initialize_schedule_surface(app.handle());
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -282,6 +286,29 @@ pub fn run() {
 #[tauri::command]
 fn show_main_window(app: AppHandle) -> Result<(), String> {
     show_main(&app)
+}
+
+#[tauri::command]
+fn expand_schedule_window(app: AppHandle) -> Result<(), String> {
+    if schedule_surface_mode() == "windows_drawer" {
+        position_schedule_surface(&app, false)
+    } else {
+        show_floating_schedule_surface(&app)
+    }
+}
+
+#[tauri::command]
+fn collapse_schedule_window(app: AppHandle) -> Result<(), String> {
+    if schedule_surface_mode() == "windows_drawer" {
+        position_schedule_surface(&app, true)
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
+fn get_schedule_surface_mode() -> String {
+    schedule_surface_mode().to_string()
 }
 
 #[tauri::command]
@@ -899,7 +926,7 @@ fn open_directory(path: &Path) -> Result<(), String> {
 }
 
 fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let open_main = MenuItem::with_id(app, "open_main", "打开 DueFlow", true, None::<&str>)?;
+    let open_main = MenuItem::with_id(app, "open_main", "打开日程", true, None::<&str>)?;
     let quick_input = MenuItem::with_id(app, "quick_input", "快速输入", true, None::<&str>)?;
     let toggle_pet = MenuItem::with_id(app, "toggle_pet", "显示/隐藏桌宠", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -1136,17 +1163,89 @@ mod tests {
 }
 
 fn show_main(app: &AppHandle) -> Result<(), String> {
-    let window = app
-        .get_webview_window("main")
-        .ok_or_else(|| "main window is not available".to_string())?;
-    window.show().map_err(|error| error.to_string())?;
-    window.set_focus().map_err(|error| error.to_string())
+    if schedule_surface_mode() == "windows_drawer" {
+        position_schedule_surface(app, false)
+    } else {
+        show_floating_schedule_surface(app)
+    }
 }
 
 fn focus_quick_input(app: &AppHandle) -> Result<(), String> {
     show_main(app)?;
     app.emit_to("main", QUICK_INPUT_EVENT, ())
         .map_err(|error| error.to_string())
+}
+
+fn initialize_schedule_surface(app: &AppHandle) -> Result<(), String> {
+    match schedule_surface_mode() {
+        "windows_drawer" => position_schedule_surface(app, true),
+        _ => Ok(()),
+    }
+}
+
+fn show_floating_schedule_surface(app: &AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "main window is not available".to_string())?;
+    window.show().map_err(|error| error.to_string())?;
+    window.set_focus().map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+fn position_schedule_surface(app: &AppHandle, collapsed: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "main window is not available".to_string())?;
+    let monitor = window
+        .current_monitor()
+        .map_err(|error| error.to_string())?
+        .or(window
+            .primary_monitor()
+            .map_err(|error| error.to_string())?)
+        .ok_or_else(|| "no monitor is available for schedule window".to_string())?;
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let window_size = window.outer_size().map_err(|error| error.to_string())?;
+    let visible_strip = 14_i32;
+    let margin = 18_i32;
+    let window_width = window_size.width as i32;
+    let window_height = window_size.height as i32;
+    let monitor_x = monitor_position.x;
+    let monitor_y = monitor_position.y;
+    let monitor_width = monitor_size.width as i32;
+    let monitor_height = monitor_size.height as i32;
+
+    let (x, y) = match schedule_surface_mode() {
+        "windows_drawer" if collapsed => (
+            monitor_x + monitor_width - visible_strip,
+            monitor_y + ((monitor_height - window_height) / 2).max(margin),
+        ),
+        "windows_drawer" => (
+            monitor_x + monitor_width - window_width - margin,
+            monitor_y + ((monitor_height - window_height) / 2).max(margin),
+        ),
+        _ => (
+            monitor_x + monitor_width - window_width - margin,
+            monitor_y + margin,
+        ),
+    };
+
+    window
+        .set_position(PhysicalPosition::new(x, y))
+        .map_err(|error| error.to_string())?;
+    window.show().map_err(|error| error.to_string())?;
+    if !collapsed {
+        window.set_focus().map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+fn schedule_surface_mode() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "windows_drawer"
+    } else {
+        "floating"
+    }
 }
 
 fn toggle_pet(app: &AppHandle) -> Result<(), String> {

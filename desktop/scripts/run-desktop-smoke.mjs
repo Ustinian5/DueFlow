@@ -48,7 +48,11 @@ function validateTauriConfig() {
   const petWindow = windows.get("pet");
   assert(mainWindow, "Tauri main window is missing.");
   assert(petWindow, "Tauri pet window is missing.");
-  assert(mainWindow.width >= 1200 && mainWindow.height >= 760, "Main workbench window is too small for the desktop layout.");
+  assert(mainWindow.width <= 520 && mainWindow.height <= 700, "Main schedule window should stay compact.");
+  assertEqual(mainWindow.alwaysOnTop, true, "Main schedule window should behave like a lightweight desktop surface.");
+  assertEqual(mainWindow.decorations, false, "Main schedule window should be frameless.");
+  assertEqual(mainWindow.transparent, true, "Main schedule window should support translucent component styling.");
+  assertEqual(mainWindow.skipTaskbar, true, "Main schedule window should behave like a drawer/widget surface.");
   assertEqual(petWindow.url, "index.html?view=pet", "Pet window must load the pet overlay route.");
   assertEqual(petWindow.alwaysOnTop, true, "Pet window must remain visible as a desktop companion.");
   assertEqual(petWindow.decorations, false, "Pet window should be frameless.");
@@ -167,7 +171,8 @@ async function runApiSmoke() {
   );
   assert(intake.inbox_item?.id, "File intake must create an Inbox item.");
   assert(intake.extracted_tasks.length > 0, "Mock LLM should extract at least one task from the smoke assignment.");
-  assertEqual(intake.requires_confirmation, true, "Extracted tasks should require confirmation.");
+  assertEqual(intake.requires_confirmation, false, "Extracted tasks should be persisted without a confirmation step.");
+  assertEqual(intake.inbox_item.status, "processed", "Recognized DDL should mark the source Inbox item as processed.");
 
   const duplicate = await postFile(
     "/desktop/intake/file?auto_extract=true",
@@ -177,28 +182,10 @@ async function runApiSmoke() {
   assertEqual(duplicate.inbox_item.status, "duplicate", "Repeated file intake should be marked duplicate.");
   assert(duplicate.inbox_item.duplicate_of?.id === intake.inbox_item.id, "Duplicate Inbox item should reference the original item.");
 
-  const confirm = await postJson("/desktop/tasks/confirm", {
-    inbox_item_id: intake.inbox_item.id,
-    tasks: intake.extracted_tasks.map((task) => ({
-      title: task.title,
-      description: task.description,
-      deadline: task.deadline,
-      deadline_confidence: task.deadline_confidence,
-      deliverables: task.deliverables,
-      submit_method: task.submit_method,
-      location: task.location,
-      priority: task.priority,
-      source_quote: task.source_quote,
-      missing_info: task.missing_info,
-    })),
-  });
-  assertEqual(confirm.summary.tasks, intake.extracted_tasks.length, "Task confirmation count mismatch.");
-  assert(confirm.summary.plans > 0, "Confirmed task should generate plan items.");
-
   const overviewAfterConfirm = await fetchJson("/desktop/overview");
-  assertEqual(overviewAfterConfirm.tasks.length, intake.extracted_tasks.length, "Overview should include confirmed tasks.");
+  assertEqual(overviewAfterConfirm.tasks.length, intake.extracted_tasks.length, "Overview should include automatically persisted tasks.");
   assert(overviewAfterConfirm.plans.length > 0, "Overview should include generated plans.");
-  assert(["idle", "deadline_near", "missing_info", "overdue"].includes(overviewAfterConfirm.pet_state.state), "Pet state after confirmation is unexpected.");
+  assert(["idle", "deadline_near", "missing_info", "overdue"].includes(overviewAfterConfirm.pet_state.state), "Pet state after automatic intake is unexpected.");
 
   const firstTaskId = overviewAfterConfirm.tasks[0].id;
   const statusUpdate = await patchJson(`/desktop/tasks/${firstTaskId}/status`, { status: "done" });

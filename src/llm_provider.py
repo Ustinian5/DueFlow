@@ -53,7 +53,7 @@ class MockLLMProvider:
         return {
             "tasks": [
                 {
-                    "title": "待确认任务",
+                    "title": "未命名 DDL",
                     "description": text[:160],
                     "deadline": None,
                     "deadline_confidence": "low",

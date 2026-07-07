@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { DragEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import { AlertTriangle, CalendarDays, ClipboardPaste, EyeOff, Loader2, Maximize2, X } from "lucide-react";
 import { fetchOverview, intakeFile } from "./api";
-import { emitIntakeToMain, listenForDesktopNotice } from "./desktopBridge";
+import { emitIntakeToMain, emitNavigateToMain, listenForDesktopNotice } from "./desktopBridge";
 import { dueFlowEvents } from "./eventBus";
 import { appendDropFailureRetryHint, summarizeIntakeError, summarizeIntakeResponse } from "./intakeFeedback";
 import type { IntakeFeedback } from "./intakeFeedback";
@@ -19,12 +19,13 @@ import type { PetActionId } from "./petRuntime";
 import { cancelQueuedPetAction, derivePetRuntimeSnapshot, enqueuePetAction } from "./petRuntime";
 import { notifyFromOverview } from "./reminders";
 import type { IntakeResponse, Overview } from "./types";
+import { startWindowDrag } from "./windowDrag";
 
 type ActionMessage = { text: string; tone: "info" | "warning" };
 
 type RecentIntakeTarget = {
   response: IntakeResponse;
-  targetView: "today" | "inbox";
+  targetView: "schedule" | "control";
   highlightInboxItemId?: string;
   actionLabel: string;
 };
@@ -179,7 +180,8 @@ export function PetOverlay() {
   return (
     <main
       className={`pet-overlay ${pet.severityClass} ${isDraggingFile ? "dragging-file" : ""}`}
-      data-tauri-drag-region
+      onPointerDown={(event) => void startWindowDrag(event)}
+      onContextMenu={(event) => void openControlCenter(event)}
       onDragOver={(event) => handleDragOver(event, setIsDraggingFile)}
       onDragLeave={(event) => handleDragLeave(event, setIsDraggingFile)}
       onDrop={(event) => void handleDrop(
@@ -231,7 +233,7 @@ export function PetOverlay() {
       </section>
 
       <section className="pet-actions">
-        <button title="打开 DueFlow" disabled={activeAction === "open-main"} onClick={() => handlePetAction("open-main")}>
+        <button title="打开日程" disabled={activeAction === "open-main"} onClick={() => handlePetAction("open-main")}>
           {activeAction === "open-main" || isWaiting ? <Loader2 className="spin" size={16} /> : <Maximize2 size={16} />}
         </button>
         <button title="快速输入" disabled={activeAction === "quick-input"} onClick={() => handlePetAction("quick-input")}>
@@ -253,6 +255,12 @@ export function PetOverlay() {
 
 function handlePetAction(actionId: PetActionId) {
   void enqueuePetAction(actionId).result;
+}
+
+async function openControlCenter(event: MouseEvent<HTMLElement>) {
+  event.preventDefault();
+  await enqueuePetAction("open-main").result;
+  await emitNavigateToMain("control");
 }
 
 async function focusRecentIntake(target: RecentIntakeTarget) {

@@ -46,8 +46,8 @@ export function buildReminderCandidates(overview: Overview, now = new Date()): R
   if (pendingInbox.length) {
     candidates.push({
       key: `inbox:${dayKey}:${pendingInbox.map((item) => item.id).join(",")}`,
-      title: "DueFlow 有新信息待确认",
-      body: `${pendingInbox.length} 条 Inbox 内容还没有确认生成任务。`,
+      title: "DueFlow 有新输入待识别",
+      body: `${pendingInbox.length} 条输入还没有生成明确 DDL。`,
       severity: "medium",
     });
   }
@@ -83,7 +83,7 @@ function taskReminder(
   suffix: string,
   severity: "medium" | "high",
 ): ReminderCandidate {
-  const deadline = task.deadline ? `截止：${task.deadline}` : "截止时间待确认";
+  const deadline = task.deadline ? `截止：${task.deadline}` : "截止时间不明确";
   return {
     key,
     title,

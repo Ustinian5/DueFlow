@@ -74,7 +74,7 @@ assert.equal(snapshot.highRiskCount, 1);
 assert.equal(snapshot.severityClass, "high");
 
 const waitingSnapshot = derivePetRuntimeSnapshot(null, true);
-assert.equal(waitingSnapshot.label, "等待确认");
+assert.equal(waitingSnapshot.label, "识别中");
 assert.equal(waitingSnapshot.message, "正在连接本地服务...");
 const noTaskSnapshot = derivePetRuntimeSnapshot({
   inbox: [],
@@ -522,7 +522,7 @@ await emitIntakeToMain(
     requires_confirmation: false,
     pet_state: overview.pet_state,
   } as IntakeResponse,
-  { targetView: "inbox", highlightInboxItemId: "inbox-2" },
+  { targetView: "control", highlightInboxItemId: "inbox-2" },
 );
 const unlistenNotice = await listenForDesktopNotice(() => undefined);
 const unlistenIntake = await listenForDesktopIntake(() => undefined);
@@ -566,38 +566,38 @@ assert.equal(sentNotifications.length, 2);
 const intakeDraftFeedback = summarizeIntakeResponse({
   inbox_item: { id: "draft-inbox", status: "pending" },
   extracted_tasks: [{ id: "task-1" }],
-  requires_confirmation: true,
+  requires_confirmation: false,
   pet_state: overview.pet_state,
 } as IntakeResponse);
-assert.equal(intakeDraftFeedback.targetView, "today");
+assert.equal(intakeDraftFeedback.targetView, "schedule");
 assert.equal(intakeDraftFeedback.highlightInboxItemId, "draft-inbox");
-assert.equal(intakeDraftFeedback.actionLabel, "查看草稿");
+assert.equal(intakeDraftFeedback.actionLabel, "看日程");
 const duplicateFeedback = summarizeIntakeResponse({
   inbox_item: { id: "duplicate-inbox", status: "duplicate" },
   extracted_tasks: [],
   requires_confirmation: false,
   pet_state: overview.pet_state,
 } as IntakeResponse);
-assert.equal(duplicateFeedback.targetView, "inbox");
+assert.equal(duplicateFeedback.targetView, "control");
 assert.equal(duplicateFeedback.tone, "warning");
-assert.equal(duplicateFeedback.actionLabel, "定位 Inbox");
+assert.equal(duplicateFeedback.actionLabel, "看记录");
 const failedFeedback = summarizeIntakeResponse({
   inbox_item: { id: "failed-inbox", status: "failed", error_message: "OCR 未识别到文字" },
   extracted_tasks: [],
   requires_confirmation: false,
   pet_state: overview.pet_state,
 } as IntakeResponse);
-assert.equal(failedFeedback.targetView, "inbox");
-assert.ok(failedFeedback.message.includes("可在 Inbox 点击重试"));
-assert.equal(failedFeedback.actionLabel, "定位 Inbox");
+assert.equal(failedFeedback.targetView, "control");
+assert.ok(failedFeedback.message.includes("可在控制中心重试"));
+assert.equal(failedFeedback.actionLabel, "看记录");
 const emptyFeedback = summarizeIntakeResponse({
   inbox_item: { id: "empty-inbox", status: "pending" },
   extracted_tasks: [],
   requires_confirmation: false,
   pet_state: overview.pet_state,
 } as IntakeResponse);
-assert.equal(emptyFeedback.targetView, "inbox");
-assert.ok(emptyFeedback.message.includes("重新抽取"));
+assert.equal(emptyFeedback.targetView, "control");
+assert.ok(emptyFeedback.message.includes("控制中心"));
 assert.equal(summarizeIntakeError(new Error("unsupported file type: .zip")).reason, "unsupported");
 assert.equal(summarizeIntakeError(new Error("uploaded file is empty")).reason, "empty");
 assert.equal(summarizeIntakeError(new Error("file parsing failed: bad pdf")).reason, "parse");

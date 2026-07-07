@@ -1,10 +1,10 @@
 # DueFlow Demo Guide
 
-This guide shows the current desktop-first DueFlow workflow: collect a notice, extract DDL information, confirm the draft, review the plan and export local artifacts.
+This guide shows the current pet-first DueFlow workflow: drag content to the desktop pet, extract DDL information, automatically generate the schedule, review the result and export local artifacts.
 
 ## Demo Goal
 
-Show that DueFlow can turn course notices, competition announcements, internship emails, screenshots or files into confirmed tasks, reverse plans, risk checks and exportable schedule files, with the desktop pet acting as the always-available intake surface.
+Show that DueFlow can turn course notices, competition announcements, internship emails, screenshots or files into editable schedule items, reverse plans, risk checks and exportable schedule files, with the desktop pet acting as the always-available intake surface.
 
 ## Preparation
 
@@ -51,11 +51,11 @@ npm run tauri:dev
 
 Walkthrough:
 
-1. Show the `main` workbench and the transparent always-on-top `pet` window.
+1. Show the transparent always-on-top `pet` window and the independent schedule surface.
 2. Drag `examples/course_project_notice.md`, a `.txt` file, a `.md` file, a PDF, or an image file onto the pet.
-3. Show the pet bubble feedback and the created Inbox item.
-4. Open the Inbox draft, review the extracted task, and confirm it before it becomes a committed task.
-5. Show Today, Week, Calendar, Risks and Inbox views in the workbench.
+3. Show the pet bubble feedback and the generated schedule item.
+4. Open the schedule surface and review or adjust the generated task.
+5. Show Today, Week, Calendar, Risks and Inbox/source views in the schedule surface.
 6. Mark a task done and verify the pet count/status updates.
 7. Open Settings and run self-check.
 8. Create a database backup.
@@ -105,7 +105,7 @@ These can be regenerated with `python scripts/run_demo.py` and `python scripts/e
 
 - `docs/images/01-dashboard.png`: desktop workbench overview.
 - `docs/images/02-pet-drop.png`: pet drag-and-drop intake and bubble feedback.
-- `docs/images/03-tasks.png`: draft confirmation, task cards and status update.
+- `docs/images/03-tasks.png`: generated task cards, schedule display and status update.
 - `docs/images/04-plan-risk.png`: plan timeline and risk filters.
 - `docs/images/05-exports.png`: exports, self-check, backup or diagnostics.
 

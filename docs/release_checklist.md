@@ -18,10 +18,10 @@ Use this checklist before publishing a GitHub release, handing off a local build
 ## Desktop Manual Smoke
 
 - [ ] Start the desktop API and run `cd desktop && npm run tauri:dev`.
-- [ ] Confirm the main workbench opens and Settings self-check has no `error` items.
+- [ ] Confirm the lightweight schedule surface and control center open separately, and Settings self-check has no `error` items.
 - [ ] Drag a sample `.txt`, `.md`, `.pdf`, or OCR-ready image onto the pet window.
-- [ ] Confirm the pet bubble opens the main window and highlights the matching draft or Inbox item.
-- [ ] Confirm extracted drafts are not persisted until the user explicitly confirms them.
+- [ ] Confirm the pet bubble reports processing and success/failure clearly.
+- [ ] Confirm the schedule surface updates automatically without a task-confirmation step.
 - [ ] Mark a task done and verify the pet count/status updates.
 - [ ] Create a database backup from Settings and verify it appears in the backup list.
 - [ ] Export diagnostics and verify it does not contain raw Inbox text or task titles.

@@ -1,6 +1,6 @@
 # DueFlow
 
-DueFlow is a local-first DDL and schedule assistant with a desktop pet interface. It turns screenshots, files, notifications, pasted text and webhook payloads into an Inbox, extracts deadline tasks with an LLM-compatible provider, asks the user to confirm drafts, then generates plans, risk checks, reminders and exports.
+DueFlow is a local-first DDL and schedule assistant with a desktop pet interface. It turns screenshots, files, notifications, pasted text and webhook payloads into an Inbox, extracts deadline tasks with an LLM-compatible provider, then automatically generates schedules, risk checks, reminders and exports that users can adjust afterward.
 
 The desktop work is inspired by OpenPets as an architecture reference only. DueFlow does not depend on OpenPets, does not copy OpenPets code or assets, and keeps its own Tauri/Python/React implementation.
 
@@ -8,10 +8,10 @@ The desktop work is inspired by OpenPets as an architecture reference only. DueF
 
 - Collects text, Markdown, PDF, image/OCR-ready files, local Inbox files and webhook payloads into a unified Inbox.
 - Extracts DDL tasks, deadlines, deliverables, submit methods, missing information and source quotes.
-- Requires confirmation before model output becomes committed tasks.
+- Automatically turns recognized DDL information into editable schedule items.
 - Generates reverse plans, risk checks, Markdown exports and calendar `.ics` files.
-- Ships a Tauri desktop shell with a main workbench and transparent always-on-top pet overlay.
-- Lets the pet accept file drops, show status changes, open the main workbench, surface warnings and guide the user back to the right Inbox item.
+- Ships a Tauri desktop shell with a transparent always-on-top pet, a lightweight schedule surface and a control center for necessary settings and quick fixes.
+- Lets the pet accept file drops, show status changes, surface warnings and update the schedule surface.
 - Supports local manifest-based desktop pet appearances and local read-only skill manifests with validation and permission boundaries.
 - Provides database backup/restore, diagnostics export, self-checks and reproducible release gates.
 
@@ -29,8 +29,7 @@ Inputs
   -> Inbox + deduplication
   -> parser and optional OCR
   -> LLM extraction
-  -> user confirmation
-  -> SQLite tasks/plans/risks
+  -> automatic SQLite tasks/plans/risks
   -> reminders, exports, diagnostics and desktop pet state
 ```
 
@@ -173,7 +172,7 @@ What the gates cover:
 - `pytest`: Python pipeline, database, desktop API, packaging metadata and webhook behavior.
 - `npm run build`: TypeScript and Vite production build.
 - `npm run test:runtime`: pet runtime, event bridge, reminders, local skills and pet manifest logic.
-- `npm run test:smoke`: isolated desktop API smoke test with temporary data; validates file intake, duplicate detection, confirmation, exports, backup/restore, diagnostics privacy and Tauri window config.
+- `npm run test:smoke`: isolated desktop API smoke test with temporary data; validates file intake, duplicate detection, task generation, exports, backup/restore, diagnostics privacy and Tauri window config.
 - `cargo test`: Tauri shell helper logic, including local pet import source confinement, asset copying and rollback.
 
 ## Release
@@ -219,6 +218,7 @@ DueFlow does not import OpenPets packages, copy its source, reuse its assets, or
 
 ## Documentation
 
+- [Current product requirements](docs/product_requirements.md)
 - [Desktop API](docs/desktop_api.md)
 - [Desktop release](docs/desktop_release.md)
 - [Release checklist](docs/release_checklist.md)
@@ -229,8 +229,7 @@ DueFlow does not import OpenPets packages, copy its source, reuse its assets, or
 - [Support](SUPPORT.md)
 - [Privacy](PRIVACY.md)
 - [Security policy](SECURITY.md)
-- [Product plan](docs/desktop_pet_product_plan.md)
-- [Design notes](docs/design.md)
+- [Current product requirements](docs/product_requirements.md)
 - [Demo notes](docs/demo.md)
 - [OpenPets reference notes](docs/openpets_reference_notes.md)
 

@@ -1,6 +1,8 @@
 # DueFlow Desktop Local API
 
-This document describes the local API intended for the future desktop shell and pet overlay. The API keeps the existing DueFlow pipeline local-first while adding a confirmation step before extracted tasks are persisted.
+This document describes the local API for the desktop shell and pet overlay.
+
+Product direction note: the current product requirement is pet-first and schedule-first. Dragged content should automatically generate or update editable schedule items without a task-confirmation step. The control center is reserved for necessary settings, small corrections and basic troubleshooting.
 
 Run it with:
 
@@ -38,7 +40,7 @@ npm run tauri:dev
 
 The shell opens two windows:
 
-- `main`: the full DDL workbench.
+- `main`: the lightweight DDL schedule surface and compact control center.
 - `pet`: a transparent, always-on-top desktop pet overlay rendered from `index.html?view=pet`.
 
 Run the desktop smoke gate before release handoff:
@@ -48,11 +50,11 @@ cd desktop
 npm run test:smoke
 ```
 
-The smoke gate starts an isolated local API with temporary data paths, validates the Tauri main/pet window configuration, and exercises the core desktop workflow through HTTP: file intake, duplicate detection, task confirmation, status update, exports, backup, restore and diagnostics export. It also checks that diagnostics output omits raw Inbox text and task titles.
+The smoke gate starts an isolated local API with temporary data paths, validates the Tauri window configuration, and exercises the core desktop workflow through HTTP: file intake, duplicate detection, task generation or update, status update, exports, backup, restore and diagnostics export. It also checks that diagnostics output omits raw Inbox text and task titles.
 
-The pet overlay polls `/desktop/overview`, shows active task and high-risk counts, can be dragged from its transparent window, and exposes quick actions to open the main workbench or hide the pet. The tray icon also provides Open DueFlow, Show/Hide Pet, and Quit actions.
+The pet overlay polls `/desktop/overview`, shows active task and high-risk counts, can be dragged from its transparent window, and exposes quick actions for interaction, schedule access and hiding the pet. The tray icon also provides Open DueFlow, Show/Hide Pet, and Quit actions.
 
-The main workbench includes a Settings view for startup diagnostics. It shows local API health, backend autostart status, backend source, host/port, data paths, LLM provider, OCR mode, supported upload types, notification permission state, quick-input shortcut, local self-check results for database integrity, schema readiness and writable data directories, a one-click SQLite database backup action, and recent database backups.
+The control center includes only the operational settings and diagnostics needed for a quick local assistant: local API health, backend autostart status, backend source, host/port, data paths, LLM provider, OCR mode, supported upload types, notification permission state, quick-input shortcut, local self-check results, a one-click SQLite database backup action, and recent database backups.
 
 Recent backups can also be restored from Settings. Restore is intentionally explicit: the frontend asks for confirmation, the API only accepts safe backup file names from the backup directory, validates SQLite integrity and core tables, creates a fresh pre-restore safety backup, then restores the selected snapshot.
 
@@ -74,13 +76,13 @@ The desktop shell also uses native system notifications through the Tauri notifi
 - a task is due today;
 - a task is due within 3 days;
 - high-risk records exist;
-- Inbox items are waiting for confirmation.
+- generated schedule items need attention because information is missing or confidence is low.
 
 The frontend requests notification permission once, stores reminder deduplication keys in `localStorage`, and avoids repeating the same reminder more than once per day. `notice.show` warning events are also bridged to native system notifications with a 5-minute deduplication window. Routine info and success notices remain in-app by default unless a caller explicitly marks the notice as system-visible.
 
 The main workbench forwards `notice.show` events to the pet window through the Tauri window event `dueflow://notice` and uses the same event as the source for selected system notifications. This keeps success, warning and quick-input feedback visible even when the main workbench is behind other windows. Pet actions use a shared runtime lifecycle with `queued`, `cancelled`, `started`, `retrying`, `finished`, `failed`, and `blocked` events. Built-in actions are serialized through a single pet action queue, queued actions can be cancelled before execution, completed actions apply short cooldowns, and cooldown or busy states surface through the same notice channel. Failed actions include an `errorKind` (`desktop_unavailable`, `permission_denied`, `transient_desktop`, or `unknown`) plus a `retryable` flag; desktop runtime and permission failures fail immediately, while transient desktop command failures retry where appropriate. The Settings view exposes local per-action policy controls for cooldown and retry count, clamps values to safe ranges, and shows the permission scope for each built-in action before the user executes it.
 
-The pet window accepts file drops as a lightweight intake entry point. Dropped files reuse `POST /desktop/intake/file`, refresh the local overview, and open the main workbench so the user can confirm extracted task drafts. The pet window classifies intake results into recognized drafts, duplicate Inbox records, empty extraction, failed Inbox records, unsupported files, empty files, parse failures and local-service connection failures. It forwards the `IntakeResponse` to the main workbench with the Tauri window event `dueflow://intake`, including the target view and highlighted Inbox item id. Recognized drafts appear in the same confirmation panel used by normal file uploads; duplicate, failed, or no-draft results open the Inbox view and highlight the relevant record. The pet bubble keeps the latest successful drop target and exposes a direct action button to reopen the main workbench and re-highlight the same draft or Inbox row; failed drops show the current failure count and tell the user to retry after fixing the file. Duplicate Inbox rows include `duplicate_of` metadata so the frontend can show and jump to the original Inbox record.
+The pet window accepts file drops as the primary intake entry point. Dropped files should reuse `POST /desktop/intake/file`, refresh the local overview, automatically generate or update schedule items when DDL information is recognized, and surface success or failure through the pet bubble. Duplicate, failed, or no-result inputs should remain visible through source records so users can inspect or retry them. The pet bubble should keep the latest successful drop target and expose a direct action button to open the updated schedule item or source record.
 
 Desktop skills are registered through a local declarative manifest registry. Current skills are built in, use a fixed permission whitelist (`pet.action`, `desktop.window`, `intake.file`, `notify.notice`), and explicitly disallow external code execution. The Settings view shows the enabled skill count, action count, permission labels, and external-code status.
 
@@ -158,17 +160,18 @@ The active limits are exposed through `GET /desktop/config` and `GET /desktop/ab
 
 ## Design Contract
 
-The desktop product should not silently turn model output into committed tasks. Input flows should use this contract:
+The desktop product should keep the common path short. Dragged files, pasted text, screenshot text and quick input should be processed automatically:
 
 ```text
 intake text/file/screenshot
-  -> extract task drafts
-  -> show confirmation UI
-  -> user edits/approves
-  -> confirm tasks
+  -> extract DDL items
+  -> persist recognized schedule items automatically
   -> generate plan/risk records
-  -> refresh pet state and calendar UI
+  -> refresh pet state and the lightweight DDL list
+  -> allow small corrections from the control center when needed
 ```
+
+The frontend should not show a task confirmation panel in the normal product flow. The API keeps `requires_confirmation` and `POST /desktop/tasks/confirm` only for backward compatibility with older clients.
 
 ## Endpoints
 
@@ -377,7 +380,7 @@ Request:
 - `folder`
 - `webhook`
 
-Response includes an `inbox_item` and zero or more `extracted_tasks`. These extracted tasks are drafts only. They are not saved to the `tasks` table until confirmed.
+Response includes an `inbox_item` and zero or more `extracted_tasks`. When DDL information is recognized, these tasks are already persisted to the schedule and the source Inbox item is marked `processed`. `requires_confirmation` remains in the response for compatibility and should be `false` in the current product flow.
 
 ### File Intake
 
@@ -396,7 +399,7 @@ Supported file types:
 - `.webp`
 - `.tif` / `.tiff`
 
-The uploaded file is parsed into text, inserted into Inbox with `source_type: "upload"`, and optionally extracted into task drafts. Image files are OCR'd first. The OCR resolver uses:
+The uploaded file is parsed into text, inserted into Inbox with `source_type: "upload"`, and optionally extracted into schedule items. Image files are OCR'd first. The OCR resolver uses:
 
 1. `DUEFLOW_OCR_COMMAND` when provided.
 2. macOS Vision through the system Swift runtime on macOS.
@@ -414,14 +417,20 @@ The response shape matches `POST /desktop/intake/text`:
   "inbox_item": {
     "source_type": "upload",
     "title": "notice.md",
-    "status": "pending"
+    "status": "processed"
   },
-  "extracted_tasks": [],
+  "extracted_tasks": [
+    {
+      "title": "提交课程项目 README 和 PDF",
+      "deadline": "2026-06-30 23:59",
+      "priority": "high"
+    }
+  ],
   "requires_confirmation": false,
   "pet_state": {
-    "state": "processing",
-    "mood": "thinking",
-    "message": "还有 1 条新信息等你确认。",
+    "state": "deadline_near",
+    "mood": "worried",
+    "message": "已加入 1 条 DDL。",
     "severity": "normal"
   }
 }
@@ -435,9 +444,9 @@ Unsupported or empty files return `400`.
 POST /desktop/inbox/{inbox_item_id}/extract
 ```
 
-Runs extraction for an existing Inbox item and returns task drafts for user confirmation.
+Runs extraction for an existing Inbox item and automatically persists recognized schedule items.
 
-Use this when the user chooses to process a pending Inbox item later, when a failed Inbox item should be retried, or when the desktop frontend reloads after an intake response was already lost. Retrying a failed Inbox item clears its previous error before extraction; if extraction fails again, the item returns to `failed` with the new error.
+Use this when a pending Inbox item should be processed, when a failed Inbox item should be retried, or when the desktop frontend reloads after an intake response was already lost. Retrying a failed Inbox item clears its previous error before extraction; if extraction fails again, the item returns to `failed` with the new error.
 
 Duplicate Inbox items are returned with `duplicate_of` metadata containing the original Inbox id, title, received time and status. The Inbox UI should show this relationship and provide a direct jump to the original record.
 
@@ -446,43 +455,17 @@ The endpoint rejects:
 - duplicate Inbox items
 - already processed Inbox items
 
-### Confirm Tasks
+### Generate Schedule Items
 
-```http
-POST /desktop/tasks/confirm
-```
+Target behavior for intake endpoints:
 
-Request:
+1. Insert or update schedule items automatically when DDL information is recognized.
+2. Generate plan items.
+3. Generate risk records.
+4. Mark the source Inbox item as `processed` or `needs_attention`.
+5. Return refreshed pet state and the affected schedule item ids.
 
-```json
-{
-  "inbox_item_id": "inbox-id",
-  "tasks": [
-    {
-      "title": "机器学习导论期末项目提交",
-      "description": "完成代码开源并提交 README PDF。",
-      "deadline": "2026-06-30 23:59",
-      "deadline_confidence": "high",
-      "deliverables": ["GitHub 开源代码", "README.md", "README PDF"],
-      "submit_method": "课程平台提交",
-      "location": null,
-      "priority": "high",
-      "source_quote": "代码开源在 GitHub，编写 README.md 并转换成 PDF 提交",
-      "missing_info": []
-    }
-  ]
-}
-```
-
-On success, the API:
-
-1. Inserts confirmed tasks.
-2. Generates plan items.
-3. Generates risk records.
-4. Marks the Inbox item as `processed`.
-5. Returns refreshed pet state.
-
-Already processed Inbox items are rejected to prevent duplicate task creation.
+Already processed source records should be deduplicated to prevent duplicate schedule creation. Low-confidence or incomplete extraction should still produce an editable schedule/source record when possible, with attention flags instead of blocking on a separate task-confirmation step.
 
 ### Update Task Status
 
@@ -513,7 +496,7 @@ Response includes the updated task and refreshed pet state.
 PUT /desktop/tasks/{task_id}
 ```
 
-Updates a confirmed task and recalculates its plan items and risks.
+Updates a schedule task and recalculates its plan items and risks.
 
 Request:
 
@@ -684,13 +667,11 @@ Recommended UI behavior:
 
 - Call `POST /desktop/intake/text` after clipboard or quick-input capture.
 - Call `POST /desktop/intake/file` after file picker or drag-and-drop.
-- In the Inbox view, call `POST /desktop/inbox/{id}/extract` for pending items that still need confirmation or failed items that should be retried.
-- Scroll highlighted Inbox records into view after desktop pet intake events.
+- In the control center, call `POST /desktop/inbox/{id}/extract` for pending items that should be processed or failed items that should be retried.
+- Scroll highlighted source records into view after desktop pet intake events.
 - In Settings, call `POST /desktop/database/backup` before risky local upgrades or manual data migration.
 - In Settings, call `POST /desktop/database/restore` only after explicit user confirmation; refresh overview and settings after success.
-- Show `extracted_tasks` in a confirmation panel.
-- Let users edit every extracted field before confirmation.
-- Call `POST /desktop/tasks/confirm` only after user approval.
-- Refresh `/desktop/overview` after confirmation or status updates.
+- Do not show a task confirmation panel for normal intake.
+- Refresh `/desktop/overview` after intake, retry, correction or status updates.
 - Use `/desktop/pet/state` to drive pet expression and bubble text.
 - Use the Exports view to call `POST /desktop/exports/{type}`, then download from `download_url`.

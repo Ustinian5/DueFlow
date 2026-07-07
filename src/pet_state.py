@@ -27,7 +27,7 @@ def derive_pet_state(
         return PetState(
             state="processing",
             mood="thinking",
-            message=f"还有 {pending_inbox_count} 条新信息等你确认。",
+            message=f"还有 {pending_inbox_count} 条输入需要识别。",
         )
 
     overdue = [task for task in active_tasks if _deadline_date(task.deadline) and _deadline_date(task.deadline) < current]
@@ -107,4 +107,3 @@ def _deadline_date(value: str | None) -> date | None:
         return datetime.fromisoformat(value).date()
     except ValueError:
         return None
-

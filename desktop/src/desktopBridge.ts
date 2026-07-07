@@ -3,6 +3,7 @@ import type { IntakeResponse } from "./types";
 
 export const DESKTOP_NOTICE_EVENT = "dueflow://notice";
 export const DESKTOP_INTAKE_EVENT = "dueflow://intake";
+export const DESKTOP_NAVIGATE_EVENT = "dueflow://navigate";
 
 export type DesktopNoticePayload = {
   message: string;
@@ -13,8 +14,13 @@ export type DesktopNoticePayload = {
 export type DesktopIntakePayload = {
   response: IntakeResponse;
   source: "pet-drop";
-  targetView?: "today" | "inbox";
+  targetView?: "schedule" | "control";
   highlightInboxItemId?: string;
+};
+
+export type DesktopNavigatePayload = {
+  source: "pet";
+  targetView: "schedule" | "control";
 };
 
 export async function emitNoticeToPet(payload: Omit<DesktopNoticePayload, "source">): Promise<void> {
@@ -42,4 +48,16 @@ export async function listenForDesktopIntake(handler: (payload: DesktopIntakePay
   if (!isTauriRuntime()) return () => undefined;
   const { listen } = await import("@tauri-apps/api/event");
   return listen<DesktopIntakePayload>(DESKTOP_INTAKE_EVENT, (event) => handler(event.payload));
+}
+
+export async function emitNavigateToMain(targetView: DesktopNavigatePayload["targetView"]): Promise<void> {
+  if (!isTauriRuntime()) return;
+  const { emitTo } = await import("@tauri-apps/api/event");
+  await emitTo<DesktopNavigatePayload>("main", DESKTOP_NAVIGATE_EVENT, { source: "pet", targetView });
+}
+
+export async function listenForDesktopNavigate(handler: (payload: DesktopNavigatePayload) => void): Promise<() => void> {
+  if (!isTauriRuntime()) return () => undefined;
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen<DesktopNavigatePayload>(DESKTOP_NAVIGATE_EVENT, (event) => handler(event.payload));
 }

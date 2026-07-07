@@ -85,8 +85,10 @@ class DesktopApiTests(unittest.TestCase):
             payload = upload.json()
             self.assertEqual(payload["inbox_item"]["source_type"], "upload")
             self.assertEqual(payload["inbox_item"]["title"], "notice.md")
-            self.assertTrue(payload["requires_confirmation"])
+            self.assertFalse(payload["requires_confirmation"])
             self.assertEqual(len(payload["extracted_tasks"]), 1)
+            self.assertEqual(payload["inbox_item"]["status"], "processed")
+            self.assertEqual(len(client.get("/desktop/overview").json()["tasks"]), 1)
 
             unsupported = client.post(
                 "/desktop/intake/file",
@@ -95,7 +97,7 @@ class DesktopApiTests(unittest.TestCase):
             self.assertEqual(unsupported.status_code, 400)
             self.assertIn("unsupported file type", unsupported.json()["detail"])
 
-    def test_image_intake_uses_ocr_then_extracts_task_draft(self):
+    def test_image_intake_uses_ocr_then_persists_schedule(self):
         with tempfile.TemporaryDirectory() as tmp:
             client = TestClient(create_app(Path(tmp) / "dueflow.db"))
 
@@ -113,10 +115,10 @@ class DesktopApiTests(unittest.TestCase):
             payload = upload.json()
             self.assertEqual(payload["inbox_item"]["source_type"], "upload")
             self.assertEqual(payload["inbox_item"]["title"], "screenshot.png")
-            self.assertTrue(payload["requires_confirmation"])
+            self.assertFalse(payload["requires_confirmation"])
             self.assertEqual(payload["extracted_tasks"][0]["deadline"], "2026-07-31 23:59")
 
-    def test_text_intake_extracts_draft_then_confirmation_persists_schedule(self):
+    def test_text_intake_extracts_and_persists_schedule_without_confirmation(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             app = create_app(root / "dueflow.db", root / "exports", root / "inbox")
@@ -174,38 +176,12 @@ class DesktopApiTests(unittest.TestCase):
             )
             self.assertEqual(intake.status_code, 200)
             payload = intake.json()
-            self.assertEqual(payload["inbox_item"]["status"], "pending")
+            self.assertEqual(payload["inbox_item"]["status"], "processed")
             self.assertEqual(payload["inbox_item"]["source_type"], "clipboard")
-            self.assertTrue(payload["requires_confirmation"])
+            self.assertFalse(payload["requires_confirmation"])
             self.assertEqual(len(payload["extracted_tasks"]), 1)
 
-            draft = payload["extracted_tasks"][0]
-            confirm = client.post(
-                "/desktop/tasks/confirm",
-                json={
-                    "inbox_item_id": payload["inbox_item"]["id"],
-                    "tasks": [
-                        {
-                            "title": draft["title"],
-                            "description": draft["description"],
-                            "deadline": draft["deadline"],
-                            "deadline_confidence": draft["deadline_confidence"],
-                            "deliverables": draft["deliverables"],
-                            "submit_method": draft["submit_method"],
-                            "location": draft["location"],
-                            "priority": draft["priority"],
-                            "source_quote": draft["source_quote"],
-                            "missing_info": draft["missing_info"],
-                        }
-                    ],
-                },
-            )
-            self.assertEqual(confirm.status_code, 200)
-            confirmed = confirm.json()
-            self.assertEqual(confirmed["summary"]["tasks"], 1)
-            self.assertGreaterEqual(confirmed["summary"]["plans"], 1)
-            self.assertIn(confirmed["pet_state"]["state"], {"idle", "deadline_near", "overdue"})
-
+            extracted_task = payload["extracted_tasks"][0]
             overview = client.get("/desktop/overview").json()
             self.assertEqual(len(overview["tasks"]), 1)
             self.assertEqual(overview["inbox"][0]["status"], "processed")
@@ -213,7 +189,7 @@ class DesktopApiTests(unittest.TestCase):
 
             duplicate_confirm = client.post(
                 "/desktop/tasks/confirm",
-                json={"inbox_item_id": payload["inbox_item"]["id"], "tasks": [draft]},
+                json={"inbox_item_id": payload["inbox_item"]["id"], "tasks": [extracted_task]},
             )
             self.assertEqual(duplicate_confirm.status_code, 409)
 
@@ -244,7 +220,7 @@ class DesktopApiTests(unittest.TestCase):
             duplicate_row = next(item for item in overview["inbox"] if item["status"] == "duplicate")
             self.assertEqual(duplicate_row["duplicate_of"]["id"], first_id)
 
-    def test_pending_inbox_item_can_be_extracted_later_then_confirmed(self):
+    def test_pending_inbox_item_can_be_extracted_later_then_auto_persisted(self):
         with tempfile.TemporaryDirectory() as tmp:
             client = TestClient(create_app(Path(tmp) / "dueflow.db"))
 
@@ -263,19 +239,13 @@ class DesktopApiTests(unittest.TestCase):
             extracted = client.post(f"/desktop/inbox/{inbox_id}/extract")
             self.assertEqual(extracted.status_code, 200)
             extracted_payload = extracted.json()
-            self.assertTrue(extracted_payload["requires_confirmation"])
+            self.assertFalse(extracted_payload["requires_confirmation"])
             self.assertEqual(len(extracted_payload["extracted_tasks"]), 1)
             self.assertIn("pet_state", extracted_payload)
 
-            confirmed = client.post(
-                "/desktop/tasks/confirm",
-                json={
-                    "inbox_item_id": inbox_id,
-                    "tasks": [extracted_payload["extracted_tasks"][0]],
-                },
-            )
-            self.assertEqual(confirmed.status_code, 200)
-            self.assertEqual(confirmed.json()["summary"]["tasks"], 1)
+            overview = client.get("/desktop/overview").json()
+            self.assertEqual(len(overview["tasks"]), 1)
+            self.assertEqual(overview["inbox"][0]["status"], "processed")
 
             processed_extract = client.post(f"/desktop/inbox/{inbox_id}/extract")
             self.assertEqual(processed_extract.status_code, 409)
@@ -302,13 +272,13 @@ class DesktopApiTests(unittest.TestCase):
             retried = client.post(f"/desktop/inbox/{inbox_id}/extract")
             self.assertEqual(retried.status_code, 200)
             retried_payload = retried.json()
-            self.assertTrue(retried_payload["requires_confirmation"])
+            self.assertFalse(retried_payload["requires_confirmation"])
             self.assertEqual(len(retried_payload["extracted_tasks"]), 1)
             overview = client.get("/desktop/overview").json()
-            self.assertEqual(overview["inbox"][0]["status"], "pending")
+            self.assertEqual(overview["inbox"][0]["status"], "processed")
             self.assertIsNone(overview["inbox"][0]["error_message"])
 
-    def test_pet_state_reports_missing_info_for_unconfirmed_or_incomplete_tasks(self):
+    def test_pet_state_reports_missing_info_for_incomplete_tasks(self):
         with tempfile.TemporaryDirectory() as tmp:
             client = TestClient(create_app(Path(tmp) / "dueflow.db"))
 
@@ -331,7 +301,7 @@ class DesktopApiTests(unittest.TestCase):
                     "tasks": [
                         {
                             "title": "准备申请材料",
-                            "description": "准备申请材料，提交方式待确认。",
+                            "description": "准备申请材料，提交方式不明确。",
                             "deadline": None,
                             "deadline_confidence": "low",
                             "deliverables": [],
@@ -359,11 +329,7 @@ class DesktopApiTests(unittest.TestCase):
                     "auto_extract": True,
                 },
             ).json()
-            draft = intake["extracted_tasks"][0]
-            task = client.post(
-                "/desktop/tasks/confirm",
-                json={"inbox_item_id": intake["inbox_item"]["id"], "tasks": [draft]},
-            ).json()["tasks"][0]
+            task = client.get("/desktop/overview").json()["tasks"][0]
 
             bad = client.patch(f"/desktop/tasks/{task['id']}/status", json={"status": "unknown"})
             self.assertEqual(bad.status_code, 400)
@@ -385,11 +351,7 @@ class DesktopApiTests(unittest.TestCase):
                     "auto_extract": True,
                 },
             ).json()
-            draft = intake["extracted_tasks"][0]
-            task = client.post(
-                "/desktop/tasks/confirm",
-                json={"inbox_item_id": intake["inbox_item"]["id"], "tasks": [draft]},
-            ).json()["tasks"][0]
+            task = client.get("/desktop/overview").json()["tasks"][0]
 
             updated = client.put(
                 f"/desktop/tasks/{task['id']}",
@@ -428,17 +390,13 @@ class DesktopApiTests(unittest.TestCase):
             root = Path(tmp)
             client = TestClient(create_app(root / "dueflow.db", root / "exports"))
 
-            intake = client.post(
+            client.post(
                 "/desktop/intake/text",
                 json={
                     "title": "课程通知",
                     "content": "请在 2026-07-31 23:59 前提交 README PDF。",
                     "auto_extract": True,
                 },
-            ).json()
-            client.post(
-                "/desktop/tasks/confirm",
-                json={"inbox_item_id": intake["inbox_item"]["id"], "tasks": [intake["extracted_tasks"][0]]},
             )
 
             for export_type, file_name in {

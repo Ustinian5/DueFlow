@@ -290,6 +290,8 @@ def test_git_tracked_text_files_do_not_contain_obvious_secret_values() -> None:
 
     for raw_path in result.stdout.splitlines():
         path = ROOT / raw_path
+        if not path.exists():
+            continue
         if path.suffix.lower() in SECRET_SCAN_SKIP_SUFFIXES:
             continue
         try:
@@ -391,7 +393,7 @@ def test_changelog_and_roadmap_describe_public_project_status() -> None:
     for expected in ["Unreleased", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
         assert expected in changelog
 
-    for expected in ["Current Focus", "Near-Term Improvements", "Non-Goals For Now", "confirmation-first"]:
+    for expected in ["Current Focus", "Near-Term Improvements", "Non-Goals For Now", "pet-first"]:
         assert expected in roadmap
 
 
@@ -428,11 +430,12 @@ def test_demo_guide_is_desktop_first_and_portable() -> None:
         assert forbidden not in demo
 
 
-def test_archived_implementation_plan_does_not_expose_agent_tasklist() -> None:
-    plan = read_text("docs/superpowers/plans/2026-06-16-dueflow-platform-implementation.md")
+def test_product_requirements_are_current_product_source() -> None:
+    requirements = read_text("docs/product_requirements.md")
+    readme = read_text("README.md")
 
-    for expected in ["Plan Archive", "historical context only", "desktop-first architecture", "OpenPets used only as an architecture reference"]:
-        assert expected in plan
+    for expected in ["桌宠负责交互入口", "日程表负责轻量展示", "控制中心负责必要设置和少量修正", "拖入内容后不设置人工确认步骤"]:
+        assert expected in requirements
 
-    for forbidden in ["REQUIRED SUB-SKILL", "- [ ]", "Commit with message", "commit with message"]:
-        assert forbidden not in plan
+    for forbidden in ["desktop_pet_product_plan.md", "desktop_pet_closed_loop.md", "docs/design.md", "Legacy product plan", "Legacy design notes"]:
+        assert forbidden not in readme

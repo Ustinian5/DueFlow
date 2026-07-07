@@ -293,11 +293,15 @@ def create_app(
         extracted_tasks: list[TaskItem] = []
         if payload.auto_extract and item.status == "pending":
             extracted_tasks = _extract_or_fail(database, item, get_llm_provider(settings))
+            if extracted_tasks:
+                _commit_extracted_tasks(database, item.id, extracted_tasks)
+            else:
+                database.update_inbox_status(item.id, "failed", "没有识别到明确 DDL")
 
         return {
-            "inbox_item": _dump_inbox_item(item, database.list_inbox_items()),
+            "inbox_item": _dump_inbox_item(database.get_inbox_item(item.id) or item, database.list_inbox_items()),
             "extracted_tasks": [_dump(task) for task in extracted_tasks],
-            "requires_confirmation": bool(extracted_tasks),
+            "requires_confirmation": False,
             "pet_state": _dump(derive_pet_state(database.list_tasks(), database.list_risks(), _pending_count(database))),
         }
 
@@ -330,11 +334,15 @@ def create_app(
         extracted_tasks: list[TaskItem] = []
         if auto_extract and item.status == "pending":
             extracted_tasks = _extract_or_fail(database, item, get_llm_provider(settings))
+            if extracted_tasks:
+                _commit_extracted_tasks(database, item.id, extracted_tasks)
+            else:
+                database.update_inbox_status(item.id, "failed", "没有识别到明确 DDL")
 
         return {
-            "inbox_item": _dump_inbox_item(item, database.list_inbox_items()),
+            "inbox_item": _dump_inbox_item(database.get_inbox_item(item.id) or item, database.list_inbox_items()),
             "extracted_tasks": [_dump(task) for task in extracted_tasks],
-            "requires_confirmation": bool(extracted_tasks),
+            "requires_confirmation": False,
             "pet_state": _dump(derive_pet_state(database.list_tasks(), database.list_risks(), _pending_count(database))),
         }
 
@@ -354,11 +362,15 @@ def create_app(
                 item = refreshed
 
         extracted_tasks = _extract_or_fail(database, item, get_llm_provider(settings))
+        if extracted_tasks:
+            _commit_extracted_tasks(database, item.id, extracted_tasks)
+        else:
+            database.update_inbox_status(item.id, "failed", "没有识别到明确 DDL")
 
         return {
-            "inbox_item": _dump_inbox_item(item, database.list_inbox_items()),
+            "inbox_item": _dump_inbox_item(database.get_inbox_item(item.id) or item, database.list_inbox_items()),
             "extracted_tasks": [_dump(task) for task in extracted_tasks],
-            "requires_confirmation": bool(extracted_tasks),
+            "requires_confirmation": False,
             "pet_state": _dump(derive_pet_state(database.list_tasks(), database.list_risks(), _pending_count(database))),
         }
 
@@ -428,7 +440,7 @@ def create_app(
         task = TaskItem(
             id=existing.id,
             inbox_item_id=existing.inbox_item_id,
-            title=payload.title.strip() or "待确认任务",
+            title=payload.title.strip() or "未命名 DDL",
             description=payload.description,
             deadline=payload.deadline,
             deadline_confidence=payload.deadline_confidence or ("low" if not payload.deadline else "medium"),
@@ -475,7 +487,7 @@ def _task_from_draft(inbox_item_id: str, draft: TaskDraftPayload) -> TaskItem:
         deadline_confidence = "low"
     return TaskItem(
         inbox_item_id=inbox_item_id,
-        title=draft.title.strip() or "待确认任务",
+        title=draft.title.strip() or "未命名 DDL",
         description=draft.description,
         deadline=draft.deadline,
         deadline_confidence=deadline_confidence,
@@ -486,6 +498,35 @@ def _task_from_draft(inbox_item_id: str, draft: TaskDraftPayload) -> TaskItem:
         source_quote=draft.source_quote,
         missing_info=draft.missing_info,
     )
+
+
+def _commit_extracted_tasks(database: Database, inbox_item_id: str, tasks: list[TaskItem]) -> dict:
+    inserted_tasks: list[TaskItem] = []
+    inserted_plans = []
+    inserted_risks = []
+    for task in tasks:
+        database.insert_task(task)
+        inserted_tasks.append(task)
+        plans = generate_plan(task)
+        for plan in plans:
+            database.insert_plan_item(plan)
+            inserted_plans.append(plan)
+        risks = check_risks(task, plans)
+        for risk in risks:
+            database.insert_risk(risk)
+            inserted_risks.append(risk)
+
+    database.update_inbox_status(inbox_item_id, "processed")
+    return {
+        "tasks": inserted_tasks,
+        "plans": inserted_plans,
+        "risks": inserted_risks,
+        "summary": {
+            "tasks": len(inserted_tasks),
+            "plans": len(inserted_plans),
+            "risks": len(inserted_risks),
+        },
+    }
 
 
 def _pending_count(database: Database) -> int:

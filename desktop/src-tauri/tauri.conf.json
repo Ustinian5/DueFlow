@@ -13,13 +13,18 @@
     "windows": [
       {
         "label": "main",
-        "title": "DueFlow Desktop",
-        "width": 1280,
-        "height": 820,
-        "minWidth": 960,
-        "minHeight": 680,
+        "title": "DueFlow DDL",
+        "width": 420,
+        "height": 620,
+        "minWidth": 360,
+        "minHeight": 480,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false
       },
       {
         "label": "pet",
@@ -47,6 +52,6 @@
     "targets": ["app"],
     "category": "Productivity",
     "shortDescription": "Local DDL assistant with a desktop pet interface",
-    "longDescription": "DueFlow Desktop turns notices, text and files into confirmed DDL tasks, plans, risks and calendar exports."
+    "longDescription": "DueFlow Desktop turns notices, text and files into lightweight editable DDL schedules through a desktop pet."
   }
 }
