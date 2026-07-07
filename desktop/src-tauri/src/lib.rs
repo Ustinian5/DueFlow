@@ -213,6 +213,7 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            show_control_center,
             expand_schedule_window,
             collapse_schedule_window,
             get_schedule_surface_mode,
@@ -286,6 +287,11 @@ pub fn run() {
 #[tauri::command]
 fn show_main_window(app: AppHandle) -> Result<(), String> {
     show_main(&app)
+}
+
+#[tauri::command]
+fn show_control_center(app: AppHandle) -> Result<(), String> {
+    show_control(&app)
 }
 
 #[tauri::command]
@@ -1176,10 +1182,19 @@ fn focus_quick_input(app: &AppHandle) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
+fn show_control(app: &AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("control")
+        .ok_or_else(|| "control window is not available".to_string())?;
+    window.show().map_err(|error| error.to_string())?;
+    window.set_focus().map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 fn initialize_schedule_surface(app: &AppHandle) -> Result<(), String> {
     match schedule_surface_mode() {
         "windows_drawer" => position_schedule_surface(app, true),
-        _ => Ok(()),
+        _ => show_floating_schedule_surface(app),
     }
 }
 
@@ -1243,6 +1258,8 @@ fn position_schedule_surface(app: &AppHandle, collapsed: bool) -> Result<(), Str
 fn schedule_surface_mode() -> &'static str {
     if cfg!(target_os = "windows") {
         "windows_drawer"
+    } else if cfg!(target_os = "macos") {
+        "macos_widget"
     } else {
         "floating"
     }

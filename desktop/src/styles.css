@@ -22,6 +22,16 @@ body {
     #eef1f3;
 }
 
+body.schedule-body {
+  min-width: 0;
+  background: transparent;
+}
+
+body.control-body {
+  min-width: 520px;
+  background: #eef1f3;
+}
+
 body.pet-body {
   min-width: 0;
   min-height: 0;
@@ -44,6 +54,19 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
+}
+
+.shell.schedule-surface {
+  overflow: hidden;
+  border: 1px solid rgba(215, 224, 228, 0.68);
+  border-radius: 18px;
+  background: rgba(246, 249, 249, 0.72);
+  box-shadow: 0 22px 52px rgba(27, 39, 45, 0.16);
+  backdrop-filter: blur(22px);
+}
+
+.shell.control-surface {
+  background: #eef1f3;
 }
 
 .sidebar {
@@ -405,12 +428,22 @@ button {
   overflow: auto;
 }
 
+.schedule-surface .workspace {
+  padding: 10px;
+}
+
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 10px;
+}
+
+.topbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
 }
 
 .topbar h1,
@@ -531,6 +564,24 @@ button {
   backdrop-filter: blur(16px);
 }
 
+.schedule-surface .schedule-panel,
+.schedule-surface .intake-panel {
+  max-width: none;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.schedule-surface .panel-heading,
+.schedule-surface .panel-title {
+  margin-bottom: 10px;
+}
+
+.schedule-surface .panel-heading h2,
+.schedule-surface .panel-title h2 {
+  font-size: 15px;
+}
+
 .ddl-list {
   display: grid;
   gap: 8px;
@@ -630,8 +681,13 @@ button {
 }
 
 .schedule-more {
+  width: 100%;
+  min-height: 32px;
   margin: 10px 0 0;
+  border: 1px solid rgba(205, 216, 221, 0.8);
+  border-radius: 8px;
   color: #68737d;
+  background: rgba(255, 255, 255, 0.72);
   font-size: 12px;
 }
 
@@ -702,6 +758,11 @@ textarea {
   resize: vertical;
 }
 
+.schedule-surface textarea {
+  min-height: 86px;
+  max-height: 118px;
+}
+
 .file-drop {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -715,6 +776,17 @@ textarea {
   transition:
     border-color 160ms ease,
     background 160ms ease;
+}
+
+.schedule-surface .file-drop {
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 10px;
+}
+
+.schedule-surface .file-drop .secondary-action {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 34px;
 }
 
 .file-drop.active {
@@ -1578,15 +1650,7 @@ label {
   }
 }
 
-@media (max-width: 1180px) {
-  body {
-    min-width: 960px;
-  }
-
-  .shell {
-    grid-template-columns: 236px minmax(0, 1fr);
-  }
-
+@media (min-width: 1180px) {
   .content-grid {
     grid-template-columns: minmax(0, 1fr);
   }

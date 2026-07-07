@@ -8,7 +8,6 @@ import {
   Clock3,
   Download,
   FileText,
-  LayoutDashboard,
   Loader2,
   Pencil,
   RefreshCw,
@@ -82,11 +81,6 @@ import type { BackendStatus, DatabaseBackupResult, DesktopAbout, DesktopConfig, 
 
 type ViewKey = "schedule" | "control";
 
-const navItems: Array<{ key: ViewKey; label: string; icon: typeof LayoutDashboard }> = [
-  { key: "schedule", label: "日程", icon: LayoutDashboard },
-  { key: "control", label: "控制中心", icon: SettingsIcon },
-];
-
 const sourceOptions = [
   { value: "manual", label: "手动输入" },
   { value: "clipboard", label: "剪贴板" },
@@ -95,8 +89,10 @@ const sourceOptions = [
 ];
 
 export function App() {
+  const surfaceRole: ViewKey = new URLSearchParams(window.location.search).get("view") === "control" ? "control" : "schedule";
+  const isControlSurface = surfaceRole === "control";
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [activeView, setActiveView] = useState<ViewKey>("schedule");
+  const [activeView, setActiveView] = useState<ViewKey>(surfaceRole);
   const [title, setTitle] = useState("课程通知");
   const [content, setContent] = useState("");
   const [sourceType, setSourceType] = useState("manual");
@@ -126,6 +122,12 @@ export function App() {
   const [scheduleSurfaceMode, setScheduleSurfaceMode] = useState<string>("floating");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const contentInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const bodyClass = isControlSurface ? "control-body" : "schedule-body";
+    document.body.classList.add(bodyClass);
+    return () => document.body.classList.remove(bodyClass);
+  }, [isControlSurface]);
 
   function applyOverviewSnapshot(nextOverview: Overview, source: "initial" | "refresh" | "intake" | "confirm" | "edit" | "status" | "export") {
     setOverview(nextOverview);
@@ -319,6 +321,14 @@ export function App() {
   function collapseScheduleSurface() {
     if (scheduleSurfaceMode !== "windows_drawer") return;
     void invokeDesktopCommand<void>("collapse_schedule_window");
+  }
+
+  async function openControlCenter() {
+    if (isTauriRuntime()) {
+      await invokeDesktopCommand<void>("show_control_center");
+      return;
+    }
+    setActiveView("control");
   }
 
   function focusQuickInput() {
@@ -518,45 +528,26 @@ export function App() {
 
   return (
     <main
-      className={`shell ${scheduleSurfaceMode}`}
+      className={`shell ${scheduleSurfaceMode} ${isControlSurface ? "control-surface" : "schedule-surface"}`}
       onMouseEnter={expandScheduleSurface}
       onMouseLeave={collapseScheduleSurface}
     >
-      <aside className="sidebar" onPointerDown={(event) => void startWindowDrag(event)}>
-        <div className="brand" data-tauri-drag-region>
-          <div className="brand-mark">D</div>
-          <div>
-            <strong>DueFlow</strong>
-            <span>Desktop</span>
-          </div>
-        </div>
-
-        <nav className="nav-list" aria-label="主要视图">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.key}
-                className={activeView === item.key ? "nav-item active" : "nav-item"}
-                onClick={() => setActiveView(item.key)}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
       <section className="workspace">
         <header className="topbar" onPointerDown={(event) => void startWindowDrag(event)}>
           <div data-tauri-drag-region>
             <h1>{activeView === "schedule" ? "DDL 清单" : "控制中心"}</h1>
             <p>{activeView === "schedule" ? "只显示最需要关注的截止事项。" : "必要设置、少量修正和基础排错。"}</p>
           </div>
-          <button className="icon-button" onClick={() => void refresh("refresh")} title="刷新">
-            <RefreshCw size={18} />
-          </button>
+          <div className="topbar-actions">
+            {!isControlSurface && (
+              <button className="icon-button" onClick={() => void openControlCenter()} title="控制中心">
+                <SettingsIcon size={18} />
+              </button>
+            )}
+            <button className="icon-button" onClick={() => void refresh("refresh")} title="刷新">
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </header>
 
         {error && (
@@ -611,6 +602,7 @@ export function App() {
               backendStatus={backendStatus}
               backendStatusError={backendStatusError}
               isConfigLoading={isConfigLoading}
+              onOpenControlCenter={() => void openControlCenter()}
               onExtractInbox={(inboxItemId) => void handleExtractInbox(inboxItemId)}
               onFocusInboxItem={focusInboxItem}
               onEditTask={beginEditTask}
@@ -624,7 +616,7 @@ export function App() {
               }}
               onStatus={(taskId, status) => void handleStatus(taskId, status)}
             />
-            {activeView === "schedule" && (
+            {activeView === "schedule" && !isControlSurface && (
               <IntakePanel
                 title={title}
                 content={content}
@@ -907,6 +899,7 @@ function ViewPanel(props: {
   backendStatus: BackendStatus | null;
   backendStatusError: string | null;
   isConfigLoading: boolean;
+  onOpenControlCenter: () => void;
   onExtractInbox: (inboxItemId: string) => void;
   onFocusInboxItem: (inboxItemId: string) => void;
   onEditTask: (task: TaskItem) => void;
@@ -952,17 +945,17 @@ function ViewPanel(props: {
   }
 
   return (
-    <ScheduleList tasks={props.tasks} onEditTask={props.onEditTask} onStatus={props.onStatus} />
+    <ScheduleList tasks={props.tasks} onOpenControlCenter={props.onOpenControlCenter} onStatus={props.onStatus} />
   );
 }
 
 function ScheduleList({
   tasks,
-  onEditTask,
+  onOpenControlCenter,
   onStatus,
 }: {
   tasks: TaskItem[];
-  onEditTask: (task: TaskItem) => void;
+  onOpenControlCenter: () => void;
   onStatus: (taskId: string, status: string) => void;
 }) {
   const ddlItems = tasks
@@ -973,10 +966,10 @@ function ScheduleList({
 
   return (
     <section className="panel schedule-panel">
-      <PanelHeading title="极简 DDL 清单" subtitle="按紧急程度和重要性排序，只显示最需要关注的事项。" />
+      <PanelHeading title="极简 DDL 清单" subtitle="按紧急程度和重要性排序。" />
       <div className="ddl-list">
         {ddlItems.map(({ task, meta }) => (
-          <article className={`ddl-item ${meta.tone}`} key={task.id} onClick={() => onEditTask(task)}>
+          <article className={`ddl-item ${meta.tone}`} key={task.id} onClick={onOpenControlCenter}>
             <div className="ddl-title">
               <strong>{shortTitle(task.title)}</strong>
               <span className="importance-pill">{importanceLabel(task.priority)}</span>
@@ -999,7 +992,7 @@ function ScheduleList({
         {!ddlItems.length && <EmptyState text="当前没有需要关注的 DDL。" />}
       </div>
       {tasks.filter((task) => task.status !== "done" && task.status !== "archived").length > 6 && (
-        <p className="schedule-more">还有更多事项，可进入控制中心查看。</p>
+        <button className="schedule-more" type="button" onClick={onOpenControlCenter}>更多事项在控制中心查看</button>
       )}
     </section>
   );

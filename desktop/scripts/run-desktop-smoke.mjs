@@ -45,14 +45,20 @@ function validateTauriConfig() {
 
   const windows = new Map((config.app?.windows ?? []).map((window) => [window.label, window]));
   const mainWindow = windows.get("main");
+  const controlWindow = windows.get("control");
   const petWindow = windows.get("pet");
   assert(mainWindow, "Tauri main window is missing.");
+  assert(controlWindow, "Tauri control window is missing.");
   assert(petWindow, "Tauri pet window is missing.");
   assert(mainWindow.width <= 520 && mainWindow.height <= 700, "Main schedule window should stay compact.");
   assertEqual(mainWindow.alwaysOnTop, true, "Main schedule window should behave like a lightweight desktop surface.");
   assertEqual(mainWindow.decorations, false, "Main schedule window should be frameless.");
   assertEqual(mainWindow.transparent, true, "Main schedule window should support translucent component styling.");
   assertEqual(mainWindow.skipTaskbar, true, "Main schedule window should behave like a drawer/widget surface.");
+  assertEqual(controlWindow.url, "index.html?view=control", "Control center must use a separate window route.");
+  assertEqual(controlWindow.visible, false, "Control center should not open until requested.");
+  assertEqual(controlWindow.decorations, true, "Control center should behave like a normal utility window.");
+  assertEqual(controlWindow.skipTaskbar, false, "Control center should be independently discoverable.");
   assertEqual(petWindow.url, "index.html?view=pet", "Pet window must load the pet overlay route.");
   assertEqual(petWindow.alwaysOnTop, true, "Pet window must remain visible as a desktop companion.");
   assertEqual(petWindow.decorations, false, "Pet window should be frameless.");
@@ -60,7 +66,7 @@ function validateTauriConfig() {
   assertEqual(petWindow.skipTaskbar, true, "Pet window should stay out of the taskbar.");
 
   const allowedWindows = new Set(capabilities.windows ?? []);
-  assert(allowedWindows.has("main") && allowedWindows.has("pet"), "Tauri capability must include both main and pet windows.");
+  assert(allowedWindows.has("main") && allowedWindows.has("control") && allowedWindows.has("pet"), "Tauri capability must include main, control and pet windows.");
   const permissions = new Set(capabilities.permissions ?? []);
   for (const permission of ["core:default", "opener:default", "notification:default"]) {
     assert(permissions.has(permission), `Tauri default capability is missing ${permission}.`);

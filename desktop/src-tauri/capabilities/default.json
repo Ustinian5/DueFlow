@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default DueFlow desktop permissions for the workbench and pet overlay.",
-  "windows": ["main", "pet"],
+  "windows": ["main", "control", "pet"],
   "permissions": ["core:default", "opener:default", "notification:default"]
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DragEvent, MouseEvent } from "react";
 import { AlertTriangle, CalendarDays, ClipboardPaste, EyeOff, Loader2, Maximize2, X } from "lucide-react";
 import { fetchOverview, intakeFile } from "./api";
-import { emitIntakeToMain, emitNavigateToMain, listenForDesktopNotice } from "./desktopBridge";
+import { emitIntakeToMain, listenForDesktopNotice } from "./desktopBridge";
 import { dueFlowEvents } from "./eventBus";
 import { appendDropFailureRetryHint, summarizeIntakeError, summarizeIntakeResponse } from "./intakeFeedback";
 import type { IntakeFeedback } from "./intakeFeedback";
@@ -20,6 +20,7 @@ import { cancelQueuedPetAction, derivePetRuntimeSnapshot, enqueuePetAction } fro
 import { notifyFromOverview } from "./reminders";
 import type { IntakeResponse, Overview } from "./types";
 import { startWindowDrag } from "./windowDrag";
+import { invokeDesktopCommand, isTauriRuntime } from "./platform";
 
 type ActionMessage = { text: string; tone: "info" | "warning" };
 
@@ -259,8 +260,9 @@ function handlePetAction(actionId: PetActionId) {
 
 async function openControlCenter(event: MouseEvent<HTMLElement>) {
   event.preventDefault();
-  await enqueuePetAction("open-main").result;
-  await emitNavigateToMain("control");
+  if (isTauriRuntime()) {
+    await invokeDesktopCommand<void>("show_control_center");
+  }
 }
 
 async function focusRecentIntake(target: RecentIntakeTarget) {

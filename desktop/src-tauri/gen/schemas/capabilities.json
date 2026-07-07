@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Default DueFlow desktop permissions for the workbench and pet overlay.","local":true,"windows":["main","pet"],"permissions":["core:default","opener:default","notification:default"]}}
+{"default":{"identifier":"default","description":"Default DueFlow desktop permissions for the workbench and pet overlay.","local":true,"windows":["main","control","pet"],"permissions":["core:default","opener:default","notification:default"]}}
