@@ -1,58 +1,118 @@
-# DueFlow 演示说明
+# DueFlow Demo Guide
 
-## 演示目标
+This guide shows the current desktop-first DueFlow workflow: collect a notice, extract DDL information, confirm the draft, review the plan and export local artifacts.
 
-展示 DueFlow 如何把课程通知、比赛公告、实习邮件等非结构化信息自动转成任务、DDL、倒排计划、风险提醒和导出文件。
+## Demo Goal
 
-## 演示前准备
+Show that DueFlow can turn course notices, competition announcements, internship emails, screenshots or files into confirmed tasks, reverse plans, risk checks and exportable schedule files, with the desktop pet acting as the always-available intake surface.
+
+## Preparation
+
+Use the mock model provider for a reproducible demo without API keys:
 
 ```bash
 conda activate dueflow
+cp .env.example .env
 python -m pytest
-python scripts\run_demo.py
+```
+
+Install and verify the desktop shell:
+
+```bash
+cd desktop
+npm install
+npm run build
+npm run test:runtime
+npm run test:smoke
+cd ..
+```
+
+Generate the CLI demo exports if you want static output files for the walkthrough:
+
+```bash
+python scripts/run_demo.py
+python scripts/export_readme_pdf.py
+```
+
+## Desktop Demo
+
+Start the local desktop API:
+
+```bash
+python -m uvicorn api.desktop:app --host 127.0.0.1 --port 8000
+```
+
+In a second terminal, start the Tauri shell:
+
+```bash
+cd desktop
+npm run tauri:dev
+```
+
+Walkthrough:
+
+1. Show the `main` workbench and the transparent always-on-top `pet` window.
+2. Drag `examples/course_project_notice.md`, a `.txt` file, a `.md` file, a PDF, or an image file onto the pet.
+3. Show the pet bubble feedback and the created Inbox item.
+4. Open the Inbox draft, review the extracted task, and confirm it before it becomes a committed task.
+5. Show Today, Week, Calendar, Risks and Inbox views in the workbench.
+6. Mark a task done and verify the pet count/status updates.
+7. Open Settings and run self-check.
+8. Create a database backup.
+9. Export diagnostics and confirm that raw Inbox text and task titles are not included.
+10. If a local pet appearance package is available, import it, validate the manifest, switch to it, then roll back to the built-in appearance.
+
+## Optional API And Webhook Demo
+
+Run the webhook API:
+
+```bash
+python -m uvicorn api.webhook:app --host 127.0.0.1 --port 8000
+```
+
+Post a sample notice:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/webhook/inbox?process=true" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"课程通知","content":"请在 2026-06-30 23:59 前提交 README PDF。"}'
+```
+
+The webhook route is useful for demonstrating external intake, while the desktop API remains the primary local app interface.
+
+## Optional Streamlit Console
+
+The legacy Streamlit console can still demonstrate the core pipeline:
+
+```bash
 python -m streamlit run app.py
-python -m uvicorn api.webhook:app --reload
 ```
 
-本机固定环境可使用：
+Use it to show Inbox, task, plan, risk and export data without launching the full desktop shell. The desktop app is the primary product surface.
 
-```bash
-D:\conda_envs\dueflow\python.exe -m pytest
-D:\conda_envs\dueflow\python.exe scripts\run_demo.py
-D:\conda_envs\dueflow\python.exe -m streamlit run app.py
-D:\conda_envs\dueflow\python.exe -m uvicorn api.webhook:app --reload
-```
+## Static Artifacts To Show
 
-## 演示流程
+- `exports/todo.md`
+- `exports/plan.md`
+- `exports/summary.md`
+- `exports/calendar.ics`
+- `exports/submission_report.md`
+- `README.pdf`
 
-1. 打开 Streamlit 控制台，展示顶部指标区：Inbox、任务、计划项、风险、高风险。
-2. 在 Inbox 中粘贴 `examples/course_project_notice.md` 的内容。
-3. 点击“处理 pending Inbox”，展示自动抽取出的课程项目任务。
-4. 切到 Tasks 页面，展示任务卡片、截止时间、提交物、优先级、状态更新。
-5. 切到 Plan 页面，展示全部计划、本周计划和风险任务筛选。
-6. 切到 Risks 页面，展示风险卡片和建议动作。
-7. 切到 Exports 页面，导出 `todo.md`、`plan.md`、`summary.md`、`calendar.ics`。
-8. 用 Webhook 模拟外部通知：
+These can be regenerated with `python scripts/run_demo.py` and `python scripts/export_readme_pdf.py`.
 
-```bash
-curl -X POST "http://127.0.0.1:8000/webhook/inbox?process=true" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"title\":\"课程通知\",\"content\":\"请在 2026-06-30 23:59 前提交 README PDF。\"}"
-```
+## Suggested Screenshots
 
-9. 展示 `exports/submission_report.md` 和 `README.pdf`，说明项目可复现。
+- `docs/images/01-dashboard.png`: desktop workbench overview.
+- `docs/images/02-pet-drop.png`: pet drag-and-drop intake and bubble feedback.
+- `docs/images/03-tasks.png`: draft confirmation, task cards and status update.
+- `docs/images/04-plan-risk.png`: plan timeline and risk filters.
+- `docs/images/05-exports.png`: exports, self-check, backup or diagnostics.
 
-## 建议截图
+## Talking Points
 
-- `docs/images/01-dashboard.png`：Streamlit 顶部指标和 Inbox。
-- `docs/images/02-tasks.png`：任务卡片和状态更新。
-- `docs/images/03-plan-risk.png`：计划卡片和风险任务筛选。
-- `docs/images/04-exports.png`：导出结果和文件列表。
-
-## 评分点对应
-
-- 大模型 API：`LLMProvider` 支持 OpenAI-compatible API，mock 模式保证无 Key 可复现。
-- Agent：抽取 Agent、规划 Agent、风险检查 Agent 串成自动化流水线。
-- 实用性：解决课程、比赛、实习邮件中的 DDL 管理问题。
-- 可展示：Streamlit 控制台、Webhook、导出文件均可现场展示。
-- 可复现：conda 环境、测试、示例数据、README PDF、提交报告齐全。
+- Local-first: database, Inbox, exports, backups and diagnostics stay on the user's machine by default.
+- Confirmation-first: model output must be reviewed before it becomes a committed task.
+- Desktop interaction: the pet provides low-friction drag-and-drop intake and status feedback.
+- OpenPets boundary: OpenPets is a reference only; DueFlow uses its own Tauri/Python/React implementation.
+- Reproducibility: mock provider, conda environment, smoke tests, release checks, sample data and README PDF are included.

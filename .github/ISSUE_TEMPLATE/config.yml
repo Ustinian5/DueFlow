@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/Ustinian5/DueFlow/security/advisories/new
+    about: Do not open public issues for vulnerabilities or private-data exposure. Follow SECURITY.md in this repository.
+  - name: Support and privacy guidance
+    url: https://github.com/Ustinian5/DueFlow/blob/main/SUPPORT.md
+    about: Read SUPPORT.md and PRIVACY.md before sharing logs, diagnostics, screenshots or local files.

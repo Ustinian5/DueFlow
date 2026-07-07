@@ -3,8 +3,10 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+import sqlite3
+from unittest.mock import patch
 
-from src.database import Database
+from src.database import SCHEMA_VERSION, Database, DatabaseSchemaError
 from src.extractors import extract_tasks
 from src.inbox import InboxService
 from src.llm_provider import MockLLMProvider
@@ -28,6 +30,14 @@ class ParserTests(unittest.TestCase):
             self.assertEqual(parse_file(txt), "DDL: Friday 23:59")
             self.assertIn("Submit README.pdf", parse_file(md))
 
+    def test_parse_image_uses_configured_ocr_command(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "notice.png"
+            image.write_bytes(b"not a real image when a custom OCR command is configured")
+
+            with patch.dict("os.environ", {"DUEFLOW_OCR_COMMAND": "printf '请在 2026-07-31 23:59 前提交 README PDF。'"}, clear=False):
+                self.assertIn("2026-07-31 23:59", parse_file(image))
+
     def test_normalized_hash_ignores_outer_whitespace(self):
         left = content_hash("  Submit project\n")
         right = content_hash("Submit project")
@@ -36,6 +46,40 @@ class ParserTests(unittest.TestCase):
 
 
 class DatabaseAndInboxTests(unittest.TestCase):
+    def test_database_initialize_sets_schema_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Database(Path(tmp) / "dueflow.db")
+            db.initialize()
+            db.initialize()
+
+            self.assertEqual(db.schema_version(), SCHEMA_VERSION)
+
+    def test_database_initialize_rejects_future_schema_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dueflow.db"
+            with sqlite3.connect(path) as conn:
+                conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION + 1}")
+
+            db = Database(path)
+            with self.assertRaises(DatabaseSchemaError):
+                db.initialize()
+            self.assertEqual(db.schema_version(), SCHEMA_VERSION + 1)
+
+    def test_database_initialize_repairs_missing_tables_for_current_schema(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dueflow.db"
+            with sqlite3.connect(path) as conn:
+                conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+            db = Database(path)
+            db.initialize()
+
+            with sqlite3.connect(path) as conn:
+                tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            self.assertIn("inbox_items", tables)
+            self.assertIn("tasks", tables)
+            self.assertEqual(db.schema_version(), SCHEMA_VERSION)
+
     def test_inbox_deduplicates_by_content_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = Database(Path(tmp) / "dueflow.db")

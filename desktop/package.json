@@ -1,0 +1,45 @@
+{
+  "name": "dueflow-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DueFlow Desktop local-first DDL assistant with a desktop pet interface",
+  "license": "MIT",
+  "homepage": "https://github.com/Ustinian5/DueFlow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ustinian5/DueFlow.git",
+    "directory": "desktop"
+  },
+  "bugs": {
+    "url": "https://github.com/Ustinian5/DueFlow/issues"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "preflight": "node scripts/run-preflight.mjs",
+    "test:runtime": "node scripts/run-runtime-tests.mjs",
+    "test:smoke": "node scripts/run-desktop-smoke.mjs",
+    "test:preflight": "node scripts/run-preflight.mjs --fixture tests/fixtures/self-check-ok.json --about-fixture tests/fixtures/about-ok.json",
+    "test:release-manifest": "node tests/release-manifest.test.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "release:mac": "bash scripts/package-macos-app.sh"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "lucide-react": "^0.561.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3"
+  }
+}

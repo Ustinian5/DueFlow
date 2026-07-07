@@ -1,0 +1,23 @@
+{
+  "status": "warning",
+  "summary": {
+    "ok": 5,
+    "warning": 2,
+    "error": 0
+  },
+  "checks": [
+    {
+      "id": "database_integrity",
+      "label": "数据库完整性",
+      "status": "ok",
+      "message": "SQLite quick_check 正常。",
+      "path": "/tmp/dueflow.db"
+    },
+    {
+      "id": "llm_provider",
+      "label": "LLM Provider",
+      "status": "warning",
+      "message": "当前使用 mock provider，适合演示和本地测试。"
+    }
+  ]
+}

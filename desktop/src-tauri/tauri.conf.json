@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DueFlow Desktop",
+  "version": "0.1.0",
+  "identifier": "com.dueflow.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "DueFlow Desktop",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false
+      },
+      {
+        "label": "pet",
+        "title": "DueFlow Pet",
+        "url": "index.html?view=pet",
+        "width": 260,
+        "height": 300,
+        "minWidth": 220,
+        "minHeight": 260,
+        "resizable": false,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app"],
+    "category": "Productivity",
+    "shortDescription": "Local DDL assistant with a desktop pet interface",
+    "longDescription": "DueFlow Desktop turns notices, text and files into confirmed DDL tasks, plans, risks and calendar exports."
+  }
+}

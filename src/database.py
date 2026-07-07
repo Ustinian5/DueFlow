@@ -10,6 +10,13 @@ from typing import Optional
 from .models import ExportRecord, InboxItem, PlanItem, RiskItem, TaskItem
 
 
+SCHEMA_VERSION = 1
+
+
+class DatabaseSchemaError(RuntimeError):
+    pass
+
+
 class Database:
     def __init__(self, path: str | Path = "dueflow.db") -> None:
         self.path = Path(path)
@@ -32,64 +39,93 @@ class Database:
 
     def initialize(self) -> None:
         with self.connect() as conn:
-            conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS inbox_items (
-                    id TEXT PRIMARY KEY,
-                    source_type TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    content_hash TEXT NOT NULL,
-                    received_at TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    error_message TEXT
-                );
+            current_version = self._schema_version_for_connection(conn)
+            if current_version > SCHEMA_VERSION:
+                raise DatabaseSchemaError(
+                    f"Database schema version {current_version} is newer than supported version {SCHEMA_VERSION}."
+                )
+            self._migrate_schema(conn, current_version)
 
-                CREATE TABLE IF NOT EXISTS tasks (
-                    id TEXT PRIMARY KEY,
-                    inbox_item_id TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    deadline TEXT,
-                    deadline_confidence TEXT NOT NULL,
-                    deliverables TEXT NOT NULL,
-                    submit_method TEXT,
-                    location TEXT,
-                    priority TEXT NOT NULL,
-                    source_quote TEXT NOT NULL,
-                    missing_info TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS plan_items (
-                    id TEXT PRIMARY KEY,
-                    task_id TEXT NOT NULL,
-                    date TEXT,
-                    title TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    type TEXT NOT NULL,
-                    status TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS risks (
-                    id TEXT PRIMARY KEY,
-                    task_id TEXT NOT NULL,
-                    risk_type TEXT NOT NULL,
-                    severity TEXT NOT NULL,
-                    message TEXT NOT NULL,
-                    suggestion TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS export_records (
-                    id TEXT PRIMARY KEY,
-                    export_type TEXT NOT NULL,
-                    file_path TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-                """
+    def _migrate_schema(self, conn: sqlite3.Connection, current_version: int) -> None:
+        if current_version <= 1:
+            self._ensure_v1_schema(conn)
+        if current_version < 1:
+            conn.execute("PRAGMA user_version = 1")
+            current_version = 1
+        if current_version != SCHEMA_VERSION:
+            raise DatabaseSchemaError(
+                f"Database schema version {current_version} does not match supported version {SCHEMA_VERSION}."
             )
+
+    @staticmethod
+    def _ensure_v1_schema(conn: sqlite3.Connection) -> None:
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS inbox_items (
+                id TEXT PRIMARY KEY,
+                source_type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                received_at TEXT NOT NULL,
+                status TEXT NOT NULL,
+                error_message TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                inbox_item_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                deadline TEXT,
+                deadline_confidence TEXT NOT NULL,
+                deliverables TEXT NOT NULL,
+                submit_method TEXT,
+                location TEXT,
+                priority TEXT NOT NULL,
+                source_quote TEXT NOT NULL,
+                missing_info TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS plan_items (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                date TEXT,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS risks (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                risk_type TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                message TEXT NOT NULL,
+                suggestion TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS export_records (
+                id TEXT PRIMARY KEY,
+                export_type TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
+
+    def schema_version(self) -> int:
+        with self.connect() as conn:
+            return self._schema_version_for_connection(conn)
+
+    @staticmethod
+    def _schema_version_for_connection(conn: sqlite3.Connection) -> int:
+        row = conn.execute("PRAGMA user_version").fetchone()
+        return int(row[0]) if row else 0
 
     def insert_inbox_item(self, item: InboxItem) -> InboxItem:
         with self.connect() as conn:
@@ -126,6 +162,11 @@ class Database:
         with self.connect() as conn:
             rows = conn.execute("SELECT * FROM inbox_items ORDER BY received_at, id").fetchall()
         return [self._row_to_inbox(row) for row in rows]
+
+    def get_inbox_item(self, item_id: str) -> InboxItem | None:
+        with self.connect() as conn:
+            row = conn.execute("SELECT * FROM inbox_items WHERE id = ?", (item_id,)).fetchone()
+        return self._row_to_inbox(row) if row else None
 
     def update_inbox_status(self, item_id: str, status: str, error_message: str | None = None) -> None:
         with self.connect() as conn:
@@ -169,6 +210,39 @@ class Database:
             rows = conn.execute("SELECT * FROM tasks ORDER BY created_at, id").fetchall()
         return [self._row_to_task(row) for row in rows]
 
+    def get_task(self, task_id: str) -> TaskItem | None:
+        with self.connect() as conn:
+            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        return self._row_to_task(row) if row else None
+
+    def update_task(self, task: TaskItem) -> TaskItem:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE tasks
+                SET title = ?, description = ?, deadline = ?,
+                    deadline_confidence = ?, deliverables = ?, submit_method = ?,
+                    location = ?, priority = ?, source_quote = ?,
+                    missing_info = ?, status = ?
+                WHERE id = ?
+                """,
+                (
+                    task.title,
+                    task.description,
+                    task.deadline,
+                    task.deadline_confidence,
+                    json.dumps(task.deliverables, ensure_ascii=False),
+                    task.submit_method,
+                    task.location,
+                    task.priority,
+                    task.source_quote,
+                    json.dumps(task.missing_info, ensure_ascii=False),
+                    task.status,
+                    task.id,
+                ),
+            )
+        return task
+
     def update_task_status(self, task_id: str, status: str) -> None:
         if status not in {"todo", "doing", "done", "archived"}:
             raise ValueError(f"Unsupported task status: {status}")
@@ -191,6 +265,10 @@ class Database:
             rows = conn.execute("SELECT * FROM plan_items ORDER BY date IS NULL, date, id").fetchall()
         return [self._row_to_plan(row) for row in rows]
 
+    def delete_plan_items_for_task(self, task_id: str) -> None:
+        with self.connect() as conn:
+            conn.execute("DELETE FROM plan_items WHERE task_id = ?", (task_id,))
+
     def insert_risk(self, risk: RiskItem) -> RiskItem:
         with self.connect() as conn:
             conn.execute(
@@ -206,6 +284,10 @@ class Database:
         with self.connect() as conn:
             rows = conn.execute("SELECT * FROM risks ORDER BY created_at, id").fetchall()
         return [self._row_to_risk(row) for row in rows]
+
+    def delete_risks_for_task(self, task_id: str) -> None:
+        with self.connect() as conn:
+            conn.execute("DELETE FROM risks WHERE task_id = ?", (task_id,))
 
     def insert_export_record(self, export_type: str, file_path: str) -> ExportRecord:
         record = ExportRecord(export_type=export_type, file_path=file_path)

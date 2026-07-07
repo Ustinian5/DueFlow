@@ -1,5 +1,6 @@
 streamlit>=1.36
 fastapi>=0.111
+python-multipart>=0.0.9
 uvicorn>=0.30
 openai>=1.40
 pdfplumber>=0.11

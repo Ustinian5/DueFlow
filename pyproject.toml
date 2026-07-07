@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dueflow"
+version = "0.1.0"
+description = "Local-first DDL and schedule assistant with a desktop pet interface."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "DueFlow Contributors" }]
+keywords = ["ddl", "schedule", "desktop", "tauri", "local-first", "assistant"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Office/Business :: Scheduling",
+]
+dependencies = [
+  "streamlit>=1.36",
+  "fastapi>=0.111",
+  "python-multipart>=0.0.9",
+  "uvicorn>=0.30",
+  "openai>=1.40",
+  "pdfplumber>=0.11",
+  "pypdf>=4.3",
+  "ics>=0.7",
+  "python-dotenv>=1.0",
+  "reportlab>=4.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/Ustinian5/DueFlow#readme"
+Repository = "https://github.com/Ustinian5/DueFlow"
+Issues = "https://github.com/Ustinian5/DueFlow/issues"
+Changelog = "https://github.com/Ustinian5/DueFlow/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["src*", "api*"]

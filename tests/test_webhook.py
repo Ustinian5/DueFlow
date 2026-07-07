@@ -1,9 +1,6 @@
 import tempfile
 import unittest
-import warnings
 from pathlib import Path
-
-warnings.filterwarnings("ignore", message="Using `httpx` with `starlette.testclient` is deprecated.*")
 
 from fastapi.testclient import TestClient
 

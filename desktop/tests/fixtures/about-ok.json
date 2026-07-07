@@ -1,0 +1,26 @@
+{
+  "service": "desktop",
+  "api_version": "0.2.0",
+  "schema_version": 1,
+  "supported_schema_version": 1,
+  "platform": "macOS-test",
+  "python_version": "3.11.15",
+  "paths": {
+    "database": "/tmp/dueflow.db",
+    "inbox": "/tmp/inbox",
+    "exports": "/tmp/exports"
+  },
+  "capabilities": {
+    "llm_provider": "mock",
+    "ocr_mode": "macos_vision",
+    "ocr_command_configured": false,
+    "supported_file_types": [".jpeg", ".jpg", ".md", ".pdf", ".png", ".tif", ".tiff", ".txt", ".webp"],
+    "database_backup": true,
+    "database_restore": true,
+    "diagnostics_export": true,
+    "limits": {
+      "max_text_chars": 200000,
+      "max_upload_bytes": 26214400
+    }
+  }
+}
