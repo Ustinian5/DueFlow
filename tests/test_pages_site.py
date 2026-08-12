@@ -372,7 +372,7 @@ def test_pages_workflow_uses_least_required_permissions_and_current_actions() ->
         "contents: read",
         "pages: write",
         "id-token: write",
-        "actions/checkout@v6",
+        "actions/checkout@v7",
         "actions/configure-pages@v5",
         "actions/upload-pages-artifact@v4",
         "actions/deploy-pages@v4",
@@ -381,6 +381,21 @@ def test_pages_workflow_uses_least_required_permissions_and_current_actions() ->
         "path: docs/site",
     ]:
         assert expected in workflow
+
+
+def test_test_workflow_uses_node24_actions() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8")
+
+    assert workflow.count("actions/checkout@v7") == 3
+    assert workflow.count("actions/setup-python@v7") == 2
+    assert workflow.count("actions/setup-node@v7") == 1
+    for retired_action in [
+        "actions/checkout@v4",
+        "actions/checkout@v6",
+        "actions/setup-python@v5",
+        "actions/setup-node@v4",
+    ]:
+        assert retired_action not in workflow
 
 
 def test_readme_links_to_live_project_site() -> None:
