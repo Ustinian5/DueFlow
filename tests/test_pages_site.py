@@ -373,14 +373,21 @@ def test_pages_workflow_uses_least_required_permissions_and_current_actions() ->
         "pages: write",
         "id-token: write",
         "actions/checkout@v7",
-        "actions/configure-pages@v5",
-        "actions/upload-pages-artifact@v4",
-        "actions/deploy-pages@v4",
+        "actions/configure-pages@v6",
+        "actions/upload-pages-artifact@v5",
+        "actions/deploy-pages@v5",
         "name: github-pages",
         "cancel-in-progress: true",
         "path: docs/site",
     ]:
         assert expected in workflow
+
+    for retired_action in [
+        "actions/configure-pages@v5",
+        "actions/upload-pages-artifact@v4",
+        "actions/deploy-pages@v4",
+    ]:
+        assert retired_action not in workflow
 
 
 def test_test_workflow_uses_node24_actions() -> None:
