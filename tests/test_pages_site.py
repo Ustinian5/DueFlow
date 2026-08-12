@@ -136,7 +136,7 @@ def test_english_site_advertises_chinese_alternate() -> None:
 
     assert 'hreflang="zh-CN" href="https://ustinian5.github.io/DueFlow/zh/"' in html
     assert 'href="zh/" lang="zh-CN" hreflang="zh-CN"' in html
-    assert "<strong>73</strong><span>project checks</span>" in html
+    assert "<strong>79</strong><span>project checks</span>" in html
 
 
 def test_pages_site_links_and_assets_are_valid() -> None:
@@ -204,6 +204,33 @@ def test_pages_site_promotes_verified_standalone_preview() -> None:
     assert "运行时无需 Python 或 Conda" in chinese
 
 
+def test_pages_site_has_local_browser_sample() -> None:
+    english, _ = parse_site()
+    chinese, _ = parse_site(ZH_SITE / "index.html")
+    script = (SITE / "app.js").read_text(encoding="utf-8")
+    styles = (SITE / "styles.css").read_text(encoding="utf-8")
+
+    for html in [english, chinese]:
+        assert html.count("data-browser-demo") == 1
+        assert html.count("data-demo-form") == 1
+        assert html.count("data-demo-input") == 1
+        assert html.count("data-demo-run") == 1
+        assert html.count("data-demo-result") == 1
+        assert "2026-09-30" in html
+
+    assert "Turn one deadline into a reverse plan." in english
+    assert "Nothing is uploaded." in english
+    assert "把一个截止日期变成倒排计划。" in chinese
+    assert "内容不会上传。" in chinese
+    assert 'form?.addEventListener("submit"' in script
+    assert "parseIsoDate" in script
+    assert "replaceChildren" in script
+    assert ".browser-demo-result[hidden]" in styles
+
+    for forbidden in ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket"]:
+        assert forbidden not in script
+
+
 def test_pages_site_is_accessible_and_tracking_free() -> None:
     html, parser = parse_site()
 
@@ -225,7 +252,7 @@ def test_simplified_chinese_site_is_accessible_and_tracking_free() -> None:
     assert 'aria-live="polite"' in html
     assert all(not script.get("src", "").startswith("http") for script in parser.scripts)
     assert "data-copy-success=\"已复制\"" in html
-    assert "<strong>73</strong><span>项目检查</span>" in html
+    assert "<strong>79</strong><span>项目检查</span>" in html
 
     combined = html + (SITE / "app.js").read_text(encoding="utf-8")
     for forbidden in ["google-analytics", "gtag(", "segment.com", "posthog", "mixpanel"]:
