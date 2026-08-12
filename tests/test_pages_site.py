@@ -393,9 +393,9 @@ def test_pages_workflow_uses_least_required_permissions_and_current_actions() ->
 def test_test_workflow_uses_node24_actions() -> None:
     workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8")
 
-    assert workflow.count("actions/checkout@v7") == 3
-    assert workflow.count("actions/setup-python@v7") == 2
-    assert workflow.count("actions/setup-node@v7") == 1
+    assert workflow.count("actions/checkout@v7") == 4
+    assert workflow.count("actions/setup-python@v7") == 3
+    assert workflow.count("actions/setup-node@v7") == 2
     for retired_action in [
         "actions/checkout@v4",
         "actions/checkout@v6",

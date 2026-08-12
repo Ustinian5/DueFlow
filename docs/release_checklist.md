@@ -16,6 +16,7 @@ Use this checklist before publishing a GitHub release, handing off a local build
 - [ ] `cd desktop/src-tauri && conda run -n dueflow cargo check`
 - [ ] `cd desktop/src-tauri && conda run -n dueflow cargo test`
 - [ ] `bash -n desktop/scripts/package-macos-app.sh`
+- [ ] The GitHub Actions `macOS preview (arm64)` and `macOS preview (x86_64)` jobs pass on a `codex/release-*` validation branch or manual dispatch.
 
 ## Desktop Manual Smoke
 
@@ -49,4 +50,5 @@ Use this checklist before publishing a GitHub release, handing off a local build
 - [ ] The extracted app contains executable `Contents/MacOS/dueflow-backend` and its private `Contents/Frameworks` runtime; `dueflow-backend --self-check` returns `status=ok` with all required desktop routes.
 - [ ] The release manifest records the preflight summary plus the bundled backend SHA256, byte size, and self-check result.
 - [ ] The bundled backend SHA256 and byte size match the extracted release artifact exactly.
+- [ ] A tagged developer prerelease contains exactly two `.app.zip` files, two `.sha256` files, and two `.manifest.json` files covering `arm64` and `x86_64`.
 - [ ] If publishing beyond local development, complete Developer ID signing, notarization, stapling, and any DMG packaging outside the unsigned local path.

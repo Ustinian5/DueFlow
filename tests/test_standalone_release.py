@@ -57,3 +57,24 @@ def test_release_packaging_embeds_verified_sidecar() -> None:
     assert "BACKEND_SHA" in package_script
     assert 'const BACKEND_SIDECAR_NAME: &str = "dueflow-backend";' in rust_source
     assert '"bundled_sidecar"' in rust_source
+
+
+def test_ci_builds_and_publishes_both_macos_preview_architectures() -> None:
+    workflow = (ROOT / ".github/workflows/test.yml").read_text()
+
+    assert "workflow_dispatch:" in workflow
+    assert "macos-preview:" in workflow
+    assert "runner: macos-15\n            arch: arm64" in workflow
+    assert "runner: macos-15-intel\n            arch: x86_64" in workflow
+    assert "startsWith(github.ref, 'refs/heads/codex/release-')" in workflow
+    assert "startsWith(github.ref, 'refs/tags/v')" in workflow
+    assert "python scripts/desktop_backend_entry.py --host 127.0.0.1 --port 8000" in workflow
+    assert "npm run release:mac" in workflow
+    assert "manifest[\"preflight\"][\"summary\"][\"error\"] == 0" in workflow
+    assert "actions/upload-artifact@v7" in workflow
+    assert "actions/download-artifact@v8" in workflow
+    assert 'assert {manifest["arch"] for manifest in manifests} == {"arm64", "x86_64"}' in workflow
+    assert "needs: [python, desktop, tauri, macos-preview]" in workflow
+    assert "contents: write" in workflow
+    assert "gh release create" in workflow
+    assert "--prerelease" in workflow

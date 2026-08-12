@@ -37,6 +37,19 @@ The packaged app starts that sibling backend directly and binds it to `127.0.0.1
 
 When `npm run release:mac` runs preflight, the release manifest embeds a compact `preflight` object containing self-check counts, API/schema versions, platform, Python version and support capabilities. When `DUEFLOW_SKIP_PREFLIGHT=1` is used, this field is `null`.
 
+## Automated Dual-Architecture Preview Builds
+
+The `test` workflow uses the same packaging script to build self-contained previews on both supported GitHub-hosted macOS architectures:
+
+- `macos-15` produces an Apple Silicon `arm64` bundle.
+- `macos-15-intel` produces an Intel `x86_64` bundle.
+
+The preview matrix runs for manual workflow dispatches, `codex/release-*` validation branches, and `v*` tags. Each runner starts an isolated loopback API, performs the real preflight, builds and self-checks its native PyInstaller sidecar, packages the Tauri app, verifies the generated checksum and manifest architecture, and uploads the three release files as a 14-day Actions artifact.
+
+For a `v*` tag, the publish job waits for the Python, desktop, Rust, and both macOS preview jobs. It downloads both architecture artifacts, verifies exactly two app archives, two checksums, and two manifests, rechecks both digests and architecture identities, then creates or updates a GitHub prerelease. Branch and manual runs only produce Actions artifacts; they do not create a release.
+
+Tag previews keep `signed: false` and `notarized: false` in each manifest. The release title identifies them as developer previews, while the checksum, bundled-backend self-check, and preflight evidence remain independently verifiable.
+
 ## Current Distribution Boundary
 
 The current release script intentionally ships an unsigned Apple Silicon developer-preview `.app.zip` instead of DMG because DMG packaging, Developer ID signing, and Apple notarization require release credentials and signing assets.

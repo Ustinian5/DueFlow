@@ -3,6 +3,10 @@ name: test
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   python:
@@ -116,3 +120,170 @@ jobs:
       - name: Run Rust tests
         working-directory: desktop/src-tauri
         run: cargo test
+
+  macos-preview:
+    name: macOS preview (${{ matrix.arch }})
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      startsWith(github.ref, 'refs/heads/codex/release-')
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    env:
+      LLM_PROVIDER: mock
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python and release dependencies
+        run: python -m pip install -r requirements.txt -r requirements-release.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Start loopback preflight API
+        run: |
+          export DATABASE_PATH="$RUNNER_TEMP/dueflow-data/dueflow.db"
+          export INBOX_PATH="$RUNNER_TEMP/dueflow-data/inbox"
+          export EXPORT_PATH="$RUNNER_TEMP/dueflow-data/exports"
+          mkdir -p "$INBOX_PATH" "$EXPORT_PATH"
+          {
+            echo "DATABASE_PATH=$DATABASE_PATH"
+            echo "INBOX_PATH=$INBOX_PATH"
+            echo "EXPORT_PATH=$EXPORT_PATH"
+          } >> "$GITHUB_ENV"
+          python scripts/desktop_backend_entry.py --host 127.0.0.1 --port 8000 >"$RUNNER_TEMP/dueflow-backend.log" 2>&1 &
+          echo "DUEFLOW_BACKEND_PID=$!" >> "$GITHUB_ENV"
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/desktop/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/dueflow-backend.log"
+          exit 1
+
+      - name: Build self-contained preview
+        working-directory: desktop
+        run: npm run release:mac
+
+      - name: Verify preview checksums and manifest
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          cd desktop/release
+          shasum -a 256 -c ./*.sha256
+          python - <<'PY'
+          import glob
+          import json
+          import os
+
+          manifests = glob.glob("*.manifest.json")
+          assert len(manifests) == 1, manifests
+          with open(manifests[0], encoding="utf-8") as handle:
+              manifest = json.load(handle)
+          assert manifest["arch"] == os.environ["EXPECTED_ARCH"], manifest
+          assert manifest["backend"]["bundled"] is True, manifest
+          assert manifest["backend"]["self_check"]["status"] == "ok", manifest
+          assert manifest["preflight"]["summary"]["error"] == 0, manifest
+          print(
+              f"verified arch={manifest['arch']} "
+              f"bundle={manifest['bundle']} backend={manifest['backend']['file']}"
+          )
+          PY
+
+      - name: Upload preview artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dueflow-preview-${{ matrix.arch }}
+          path: desktop/release/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop loopback preflight API
+        if: always()
+        run: |
+          if [[ -n "${DUEFLOW_BACKEND_PID:-}" ]]; then
+            kill "$DUEFLOW_BACKEND_PID" 2>/dev/null || true
+          fi
+
+  publish-preview:
+    name: Publish tagged preview
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [python, desktop, tauri, macos-preview]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download both architecture artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: dueflow-preview-*
+          path: release
+          merge-multiple: true
+
+      - name: Verify release payload
+        run: |
+          test "$(find release -maxdepth 1 -name '*.app.zip' | wc -l | tr -d ' ')" = "2"
+          test "$(find release -maxdepth 1 -name '*.sha256' | wc -l | tr -d ' ')" = "2"
+          test "$(find release -maxdepth 1 -name '*.manifest.json' | wc -l | tr -d ' ')" = "2"
+          for checksum in release/*.sha256; do
+            (cd release && sha256sum -c "$(basename "$checksum")")
+          done
+          python - <<'PY'
+          import glob
+          import json
+
+          manifests = []
+          for path in glob.glob("release/*.manifest.json"):
+              with open(path, encoding="utf-8") as handle:
+                  manifests.append(json.load(handle))
+          assert {manifest["arch"] for manifest in manifests} == {"arm64", "x86_64"}, manifests
+          assert all(manifest["backend"]["self_check"]["status"] == "ok" for manifest in manifests)
+          assert all(manifest["preflight"]["summary"]["error"] == 0 for manifest in manifests)
+          print("verified release architectures=arm64,x86_64")
+          PY
+
+      - name: Create or update GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" release/* \
+              --generate-notes \
+              --prerelease \
+              --title "DueFlow $GITHUB_REF_NAME developer preview" \
+              --repo "$GITHUB_REPOSITORY"
+          fi
