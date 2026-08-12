@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DueFlow — 把分散的截止信息变成可执行的本地计划</title>
+    <meta
+      name="description"
+      content="DueFlow 是开源、本地优先的截止日期助手，可将通知、截图、文件和文本整理为任务、倒排计划、风险检查与日历导出。"
+    >
+    <meta name="theme-color" content="#0b0d12">
+    <meta name="color-scheme" content="dark">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://ustinian5.github.io/DueFlow/zh/">
+    <link rel="alternate" hreflang="en" href="https://ustinian5.github.io/DueFlow/">
+    <link rel="alternate" hreflang="zh-CN" href="https://ustinian5.github.io/DueFlow/zh/">
+    <link rel="alternate" hreflang="x-default" href="https://ustinian5.github.io/DueFlow/">
+    <link rel="icon" href="../assets/icon.png" type="image/png">
+    <link rel="manifest" href="../site.webmanifest">
+    <link rel="stylesheet" href="../styles.css">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="DueFlow">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:title" content="DueFlow — 截止信息输入，可执行计划输出">
+    <meta
+      property="og:description"
+      content="本地优先的截止日期助手，支持 OCR 输入、计划生成、风险检查、日历导出和 Tauri 桌面伙伴。"
+    >
+    <meta property="og:url" content="https://ustinian5.github.io/DueFlow/zh/">
+    <meta property="og:image" content="https://ustinian5.github.io/DueFlow/assets/dashboard.png">
+    <meta property="og:image:alt" content="DueFlow 收件箱、任务、计划和风险工作流仪表盘">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DueFlow — 截止信息输入，可执行计划输出">
+    <meta name="twitter:description" content="开源、本地优先的截止日期规划与桌面伙伴。">
+    <meta name="twitter:image" content="https://ustinian5.github.io/DueFlow/assets/dashboard.png">
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DueFlow",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "softwareVersion": "0.1.1",
+        "inLanguage": "zh-CN",
+        "url": "https://ustinian5.github.io/DueFlow/zh/",
+        "downloadUrl": "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1",
+        "codeRepository": "https://github.com/Ustinian5/DueFlow",
+        "license": "https://opensource.org/license/mit",
+        "isAccessibleForFree": true,
+        "description": "开源、本地优先的截止日期和日程助手，支持 OCR 输入、计划生成、风险检查、日历导出与 Tauri 桌面伙伴。"
+      }
+    </script>
+    <script src="../app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <header class="site-header" aria-label="主导航">
+      <div class="nav-shell">
+        <a class="brand" href="#top" aria-label="DueFlow 首页">
+          <img src="../assets/icon.png" width="36" height="36" alt="">
+          <span>DueFlow</span>
+        </a>
+        <nav class="nav-links" aria-label="页面章节">
+          <a href="#workflow">工作流</a>
+          <a href="#demo">演示</a>
+          <a href="#privacy">本地优先</a>
+          <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">v0.1.1</a>
+        </nav>
+        <div class="header-actions">
+          <a class="language-link" href="../" lang="en" hreflang="en">English</a>
+          <a class="button button-small button-ghost" href="https://github.com/Ustinian5/DueFlow">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero section-shell" id="top">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="status-dot"></span> 开源 · 本地优先 · v0.1.1</p>
+          <h1>截止信息四处分散。<br><span>你的计划不该如此。</span></h1>
+          <p class="hero-lede">
+            DueFlow 将通知、截图、文件、粘贴文本和 Webhook 数据整理为结构化任务、倒排计划、
+            风险检查、提醒与日历导出，并在你的设备上完成整个流程。
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#demo">运行 60 秒演示</a>
+            <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow">在 GitHub 收藏 DueFlow</a>
+          </div>
+          <ul class="trust-list" aria-label="项目保证">
+            <li>无需注册</li>
+            <li>演示无需 API 密钥</li>
+            <li>MIT 许可证</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" aria-label="DueFlow 产品预览">
+          <div class="window-bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <p>DueFlow · 本地工作区</p>
+          </div>
+          <img
+            src="../assets/dashboard.png"
+            width="1440"
+            height="1100"
+            alt="展示 DueFlow 收件箱、任务、计划和风险工作流的仪表盘"
+          >
+          <div class="floating-card floating-card-top" aria-hidden="true">
+            <strong>已提取 3 个任务</strong>
+            <span>已生成 17 个计划项</span>
+          </div>
+          <div class="floating-card floating-card-bottom" aria-hidden="true">
+            <strong>数据留在本地</strong>
+            <span>SQLite · 文件 · 导出</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="proof-bar" aria-label="已验证的项目事实">
+        <div class="section-shell proof-grid">
+          <div><strong>73</strong><span>项目检查</span></div>
+          <div><strong>3</strong><span>CI 技术门禁</span></div>
+          <div><strong>0</strong><span>演示所需密钥</span></div>
+          <div><strong>MIT</strong><span>开源许可证</span></div>
+        </div>
+      </section>
+
+      <section class="content-section section-shell" id="workflow">
+        <div class="section-heading">
+          <p class="eyebrow">从噪声到下一步行动</p>
+          <h2>用一套工作流处理每一种截止信息。</h2>
+          <p>收集到达的信息，理解它的含义，并获得可以编辑和导出的日程。</p>
+        </div>
+
+        <ol class="workflow-grid">
+          <li>
+            <span class="step-number">01</span>
+            <div class="feature-icon" aria-hidden="true">↓</div>
+            <h3>收集</h3>
+            <p>导入文本、Markdown、PDF、待 OCR 图片、拖放文件、本地收件箱文件或 Webhook。</p>
+          </li>
+          <li>
+            <span class="step-number">02</span>
+            <div class="feature-icon" aria-hidden="true">◇</div>
+            <h3>提取</h3>
+            <p>结构化截止日期、交付物、提交方式、缺失信息和来源引用。</p>
+          </li>
+          <li>
+            <span class="step-number">03</span>
+            <div class="feature-icon" aria-hidden="true">↗</div>
+            <h3>规划</h3>
+            <p>生成可编辑任务、倒排计划、风险检查、提醒和按优先级排列的下一步。</p>
+          </li>
+          <li>
+            <span class="step-number">04</span>
+            <div class="feature-icon" aria-hidden="true">✓</div>
+            <h3>导出</h3>
+            <p>把结果导出为 Markdown 报告、待办清单、摘要或标准日历文件。</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="content-section feature-band" id="privacy">
+        <div class="section-shell split-layout">
+          <div class="section-heading align-left">
+            <p class="eyebrow">默认本地优先</p>
+            <h2>你的截止信息属于你。</h2>
+            <p>
+              DueFlow 将数据库、收件箱、导出、备份和诊断保留在本机。确定性的 mock 提供商让你在配置
+              任何外部模型前即可评估完整工作流。
+            </p>
+            <a class="text-link" href="https://github.com/Ustinian5/DueFlow/blob/main/PRIVACY.md">
+              阅读隐私边界 <span aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div class="principle-grid">
+            <article>
+              <span aria-hidden="true">01</span>
+              <h3>本地存储</h3>
+              <p>SQLite 状态、源文件、备份和生成内容都保存在你配置的路径中。</p>
+            </article>
+            <article>
+              <span aria-hidden="true">02</span>
+              <h3>结果可检查</h3>
+              <p>计划和导出始终可以编辑；来源引用帮助你复核提取结果。</p>
+            </article>
+            <article>
+              <span aria-hidden="true">03</span>
+              <h3>内置恢复</h3>
+              <p>备份、恢复、诊断、模式检查和可复现门禁支持可靠的本地迭代。</p>
+            </article>
+            <article>
+              <span aria-hidden="true">04</span>
+              <h3>实现完全开放</h3>
+              <p>Python、FastAPI、React、Tauri 和 Rust 组件均采用 MIT 许可证。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section section-shell" id="demo">
+        <div class="demo-card">
+          <div class="demo-copy">
+            <p class="eyebrow">试用完整工作流</p>
+            <h2>从克隆到生成计划，只需 60 秒。</h2>
+            <p>默认 mock 提供商具有确定性，首次运行无需账号、令牌或 API 密钥。</p>
+            <div class="expected-output">
+              <span>预期输出</span>
+              <code>processed=3 tasks=3 plans=17 risks=5</code>
+            </div>
+          </div>
+          <div class="terminal" aria-label="DueFlow 安装命令">
+            <div class="terminal-header">
+              <span>终端</span>
+              <button
+                class="copy-button"
+                type="button"
+                data-copy-target="demo-command"
+                data-copy-success="已复制"
+                data-copy-reset="复制"
+                data-copy-message="命令已复制到剪贴板"
+                data-copy-fallback="请选择并复制这些命令"
+              >复制</button>
+            </div>
+            <pre id="demo-command"><code><span class="prompt">$</span> git clone https://github.com/Ustinian5/DueFlow.git
+<span class="prompt">$</span> cd DueFlow
+<span class="prompt">$</span> conda env create -f environment.yml
+<span class="prompt">$</span> conda run -n dueflow python scripts/run_demo.py</code></pre>
+            <p class="copy-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section section-shell">
+        <div class="release-card">
+          <div>
+            <p class="eyebrow">最新源码版本</p>
+            <h2>DueFlow v0.1.1</h2>
+            <p>已分别通过普通克隆和 GitHub 可下载源码归档验证。</p>
+          </div>
+          <div class="release-actions">
+            <a class="button button-primary" href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">查看版本</a>
+            <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow/issues">提交反馈</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="final-cta section-shell">
+        <p class="eyebrow">构建更从容的一周</p>
+        <h2>让截止日期清晰可见。<br>让下一步行动一目了然。</h2>
+        <p>查看源码，运行本地演示，并参与塑造 DueFlow 的下一个版本。</p>
+        <div class="hero-actions centered-actions">
+          <a class="button button-primary" href="https://github.com/Ustinian5/DueFlow">在 GitHub 收藏</a>
+          <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow/blob/main/CONTRIBUTING.md">参与贡献</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="section-shell footer-grid">
+        <div class="brand footer-brand">
+          <img src="../assets/icon.png" width="32" height="32" alt="">
+          <span>DueFlow</span>
+        </div>
+        <p>采用 MIT 许可证开源 · 本页面不含分析或跟踪脚本。</p>
+        <nav aria-label="页脚链接">
+          <a href="https://github.com/Ustinian5/DueFlow">GitHub</a>
+          <a href="https://github.com/Ustinian5/DueFlow/releases">版本</a>
+          <a href="https://github.com/Ustinian5/DueFlow/issues">问题</a>
+        </nav>
+        <p class="copyright">© <span data-current-year>2026</span> DueFlow 贡献者</p>
+      </div>
+    </footer>
+  </body>
+</html>

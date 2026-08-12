@@ -6,6 +6,10 @@
 </div>
 
 <p align="center">
+  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml"><img alt="CI" src="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml/badge.svg"></a>
   <a href="https://ustinian5.github.io/DueFlow/"><img alt="Project site" src="https://img.shields.io/badge/project-site-ff4b5c"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
