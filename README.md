@@ -29,6 +29,21 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
+## Try the Browser Sample - No Install
+
+Edit one deadline notice and generate five reverse-plan milestones plus a deadline-risk summary directly in your browser. The interaction runs locally in the tab: no signup, API key, or upload is required.
+
+<p align="center">
+  <a href="https://ustinian5.github.io/DueFlow/#demo"><strong>Open the 60-second browser sample →</strong></a> ·
+  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"><strong>Download the Apple Silicon preview</strong></a>
+</p>
+
+<a href="https://ustinian5.github.io/DueFlow/#demo">
+  <img src="docs/images/browser-sample-en.png" alt="DueFlow browser sample generating five reverse-plan milestones from one deadline notice">
+</a>
+
+<p align="center"><sub>If the sample fits your workflow, use GitHub's Star button to follow future releases.</sub></p>
+
 ![DueFlow dashboard showing Inbox, task, plan and risk workflows](docs/images/01-dashboard.png)
 
 DueFlow turns screenshots, files, notifications, pasted text, and webhook payloads into an Inbox. It extracts deadline tasks with an LLM-compatible provider, then generates editable schedules, reverse plans, risk checks, reminders, Markdown reports, and calendar files.

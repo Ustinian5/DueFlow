@@ -29,6 +29,21 @@
   <a href="CONTRIBUTING.md">参与贡献</a>
 </p>
 
+## 无需安装，直接在浏览器试用
+
+编辑一条截止通知，即可在浏览器中生成 5 个倒排节点和截止风险摘要。交互完全在当前标签页运行，无需注册、API 密钥，也不会上传内容。
+
+<p align="center">
+  <a href="https://ustinian5.github.io/DueFlow/zh/#demo"><strong>打开 60 秒浏览器样例 →</strong></a> ·
+  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"><strong>下载 Apple Silicon 预览版</strong></a>
+</p>
+
+<a href="https://ustinian5.github.io/DueFlow/zh/#demo">
+  <img src="docs/images/browser-sample-zh.png" alt="DueFlow 浏览器样例从一条截止通知生成 5 个倒排节点">
+</a>
+
+<p align="center"><sub>如果样例适合你的工作流，可使用 GitHub 的 Star 按钮关注后续版本。</sub></p>
+
 ![展示 DueFlow 收件箱、任务、计划和风险工作流的仪表盘](docs/images/01-dashboard.png)
 
 DueFlow 将截图、文件、通知、粘贴文本和 Webhook 数据放入统一收件箱。它通过兼容 LLM 的提供商提取截止任务，并生成可编辑日程、倒排计划、风险检查、提醒、Markdown 报告和日历文件。

@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 from urllib.parse import urlparse
 
+from pypdf import PdfReader
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docs" / "site"
@@ -299,6 +301,33 @@ def test_readme_links_to_live_project_site() -> None:
     assert 'href="README.md">English</a>' in chinese
     assert "https://ustinian5.github.io/DueFlow/zh/" in chinese
     assert "conda run -n dueflow python scripts/run_demo.py" in chinese
+
+    assert "Try the Browser Sample - No Install" in readme
+    assert 'href="https://ustinian5.github.io/DueFlow/#demo"' in readme
+    assert 'src="docs/images/browser-sample-en.png"' in readme
+    assert "无需安装，直接在浏览器试用" in chinese
+    assert 'href="https://ustinian5.github.io/DueFlow/zh/#demo"' in chinese
+    assert 'src="docs/images/browser-sample-zh.png"' in chinese
+
+    for relative_path in [
+        "docs/images/browser-sample-en.png",
+        "docs/images/browser-sample-zh.png",
+    ]:
+        screenshot = ROOT / relative_path
+        data = screenshot.read_bytes()
+        assert data.startswith(b"\x89PNG\r\n\x1a\n")
+        assert int.from_bytes(data[16:20], "big") == 1440
+        assert int.from_bytes(data[20:24], "big") == 1057
+        assert screenshot.stat().st_size < 500_000
+
+    pdf = PdfReader(ROOT / "README.pdf")
+    pdf_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+    assert len(pdf.pages) == 7
+    assert "Open the 60-second browser sample" in pdf_text
+    assert "Why DueFlow" in pdf_text
+    assert "DueFlow - MIT licensed - github.com/Ustinian5/DueFlow" in pdf_text
+    assert "<div" not in pdf_text
+    assert "<a href" not in pdf_text
 
 
 def test_simplified_chinese_readme_local_file_links_resolve() -> None:
