@@ -4,15 +4,17 @@ Use this checklist before publishing a GitHub release, handing off a local build
 
 ## Automated Gates
 
-- [ ] `python -m pytest`
+- [ ] `conda run -n dueflow python -m pytest`
+- [ ] `conda run -n dueflow python -m pytest tests/test_standalone_release.py`
 - [ ] `cd desktop && npm run build`
 - [ ] `cd desktop && npm run test:runtime`
 - [ ] `cd desktop && npm run test:smoke`
 - [ ] `cd desktop && npm run test:preflight`
 - [ ] `cd desktop && npm run test:release-manifest`
-- [ ] `cd desktop/src-tauri && cargo fmt --check`
-- [ ] `cd desktop/src-tauri && cargo check`
-- [ ] `cd desktop/src-tauri && cargo test`
+- [ ] `cd desktop && npm run build:sidecar`
+- [ ] `cd desktop/src-tauri && conda run -n dueflow cargo fmt --check`
+- [ ] `cd desktop/src-tauri && conda run -n dueflow cargo check`
+- [ ] `cd desktop/src-tauri && conda run -n dueflow cargo test`
 - [ ] `bash -n desktop/scripts/package-macos-app.sh`
 
 ## Desktop Manual Smoke
@@ -27,6 +29,7 @@ Use this checklist before publishing a GitHub release, handing off a local build
 - [ ] Export diagnostics and verify it does not contain raw Inbox text or task titles.
 - [ ] Import or switch a local pet appearance, then roll back to the built-in pet.
 - [ ] Verify the system notification permission flow on the target OS.
+- [ ] Extract the release zip into a clean temporary directory, launch the `.app`, and confirm it reaches a healthy local API without a source checkout, Python, or Conda on the runtime path.
 
 ## Open Source Hygiene
 
@@ -36,12 +39,14 @@ Use this checklist before publishing a GitHub release, handing off a local build
 - [ ] `reference/openpets` is not committed and DueFlow does not depend on OpenPets packages, code, assets or Electron runtime.
 - [ ] `desktop/src-tauri/tauri.conf.json` uses an explicit CSP and only allows local API/Tauri asset sources.
 - [ ] Desktop intake limits are documented and `GET /desktop/config` reports the active text/upload limits.
-- [ ] `pyproject.toml`, `requirements.txt`, `environment.yml`, `desktop/package-lock.json` and `desktop/src-tauri/Cargo.lock` are in sync with the implemented code.
+- [ ] `pyproject.toml`, `requirements.txt`, `requirements-release.txt`, `environment.yml`, `desktop/package-lock.json` and `desktop/src-tauri/Cargo.lock` are in sync with the implemented code.
 - [ ] Generated release artifacts under `desktop/release/` are not committed unless intentionally attached to a GitHub release outside the source tree.
 
 ## Distribution Boundary
 
 - [ ] Local macOS packaging uses `cd desktop && npm run release:mac`.
-- [ ] The generated `.sha256` file verifies with `shasum -a 256 -c desktop/release/*.sha256`.
-- [ ] The release manifest records the preflight summary.
+- [ ] The generated `.sha256` file verifies with `(cd desktop/release && shasum -a 256 -c *.sha256)`.
+- [ ] The extracted app contains executable `Contents/MacOS/dueflow-backend` and its private `Contents/Frameworks` runtime; `dueflow-backend --self-check` returns `status=ok` with all required desktop routes.
+- [ ] The release manifest records the preflight summary plus the bundled backend SHA256, byte size, and self-check result.
+- [ ] The bundled backend SHA256 and byte size match the extracted release artifact exactly.
 - [ ] If publishing beyond local development, complete Developer ID signing, notarization, stapling, and any DMG packaging outside the unsigned local path.
