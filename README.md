@@ -7,6 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml"><img alt="CI" src="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml/badge.svg"></a>
+  <a href="https://ustinian5.github.io/DueFlow/"><img alt="Project site" src="https://img.shields.io/badge/project-site-ff4b5c"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white">
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-3DDC97">
@@ -14,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://ustinian5.github.io/DueFlow/">Project site</a> ·
   <a href="#60-second-local-demo">60-second demo</a> ·
   <a href="#desktop-development">Desktop development</a> ·
   <a href="docs/product_requirements.md">Product requirements</a> ·
