@@ -35,6 +35,8 @@ if (browserDemo) {
   const summary = browserDemo.querySelector("[data-demo-summary]");
   const plan = browserDemo.querySelector("[data-demo-plan]");
   const risk = browserDemo.querySelector("[data-demo-risk]");
+  const shareButton = browserDemo.querySelector("[data-demo-share]");
+  const shareStatus = browserDemo.querySelector("[data-demo-share-status]");
 
   const messages = locale === "zh-CN"
     ? {
@@ -46,6 +48,11 @@ if (browserDemo) {
         urgent: (days) => `风险：仅剩 ${days} 天，建议立即确认范围并锁定提交路径。`,
         tight: (days) => `风险：剩余 ${days} 天，计划可执行，但应尽早完成首次评审。`,
         healthy: (days) => `缓冲：剩余 ${days} 天，可按倒排节点推进。`,
+        shareTitle: "DueFlow — 本地优先的截止日期规划助手",
+        shareText: "我用 DueFlow 的本地浏览器样例，把一个截止日期变成了五步倒排计划。",
+        shared: "分享面板已打开。",
+        copied: "DueFlow 介绍和链接已复制。",
+        shareFallback: "可复制此链接分享：https://ustinian5.github.io/DueFlow/zh/",
       }
     : {
         invalid: "Enter one valid ISO date, for example 2026-09-30.",
@@ -56,7 +63,16 @@ if (browserDemo) {
         urgent: (days) => `Risk: only ${days} days remain. Confirm scope and submission path now.`,
         tight: (days) => `Risk: ${days} days remain. The plan is workable, but the first review should happen early.`,
         healthy: (days) => `Buffer: ${days} days remain. Follow the reverse-plan milestones below.`,
+        shareTitle: "DueFlow — local-first deadline planning",
+        shareText: "I turned one deadline into a five-step reverse plan with DueFlow's local browser sample.",
+        shared: "The share panel is open.",
+        copied: "DueFlow's introduction and link were copied.",
+        shareFallback: "Copy this link to share: https://ustinian5.github.io/DueFlow/",
       };
+
+  const shareUrl = locale === "zh-CN"
+    ? "https://ustinian5.github.io/DueFlow/zh/"
+    : "https://ustinian5.github.io/DueFlow/";
 
   const formatDate = (date) => new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
@@ -117,5 +133,28 @@ if (browserDemo) {
           : messages.healthy(daysRemaining);
     result.hidden = false;
     status.textContent = messages.ready;
+  });
+
+  shareButton?.addEventListener("click", async () => {
+    if (!shareStatus) return;
+
+    const shareData = {
+      title: messages.shareTitle,
+      text: messages.shareText,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        shareStatus.textContent = messages.shared;
+        return;
+      }
+
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      shareStatus.textContent = messages.copied;
+    } catch (error) {
+      if (error?.name !== "AbortError") shareStatus.textContent = messages.shareFallback;
+    }
   });
 }

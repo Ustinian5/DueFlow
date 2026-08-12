@@ -218,16 +218,30 @@ def test_pages_site_has_local_browser_sample() -> None:
         assert html.count("data-demo-input") == 1
         assert html.count("data-demo-run") == 1
         assert html.count("data-demo-result") == 1
+        assert html.count("data-demo-star") == 1
+        assert html.count("data-demo-share") == 2
+        assert html.count("data-demo-share-status") == 1
         assert "2026-09-30" in html
 
     assert "Turn one deadline into a reverse plan." in english
     assert "Nothing is uploaded." in english
     assert "把一个截止日期变成倒排计划。" in chinese
     assert "内容不会上传。" in chinese
+    assert "Share this local demo" in english
+    assert "分享这个本地演示" in chinese
     assert 'form?.addEventListener("submit"' in script
+    assert 'shareButton?.addEventListener("click"' in script
     assert "parseIsoDate" in script
     assert "replaceChildren" in script
+    assert "navigator.share(shareData)" in script
+    assert "navigator.clipboard.writeText" in script
+    assert "AbortError" in script
+    assert "https://ustinian5.github.io/DueFlow/zh/" in script
+    assert "I turned one deadline into a five-step reverse plan" in script
+    assert "我用 DueFlow 的本地浏览器样例" in script
     assert ".browser-demo-result[hidden]" in styles
+    assert ".browser-demo-conversion" in styles
+    assert ".browser-demo-share-status" in styles
 
     for forbidden in ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket"]:
         assert forbidden not in script

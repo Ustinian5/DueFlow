@@ -704,9 +704,20 @@ a {
   grid-column: 1 / -1;
 }
 
-.browser-demo-result > .text-link {
-  justify-self: start;
+.browser-demo-conversion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   grid-column: 1 / -1;
+}
+
+.browser-demo-share-status {
+  flex-basis: 100%;
+  min-height: 18px;
+  margin: 0;
+  color: var(--green);
+  font-size: 12px;
 }
 
 .demo-card {
@@ -1004,6 +1015,11 @@ a {
   }
 
   .browser-demo-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .browser-demo-conversion {
     align-items: stretch;
     flex-direction: column;
   }
