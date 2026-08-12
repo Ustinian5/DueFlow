@@ -68,6 +68,7 @@ def test_pages_site_has_complete_static_bundle() -> None:
         ".nojekyll",
         "assets/icon.png",
         "assets/dashboard.png",
+        "assets/social-preview.png",
         "zh/index.html",
     }
 
@@ -83,7 +84,10 @@ def test_pages_site_has_search_and_social_metadata() -> None:
     assert keyed["description"] and "local-first" in keyed["description"]
     assert keyed["og:title"] == "DueFlow — Deadlines in, actionable schedule out"
     assert keyed["og:url"] == "https://ustinian5.github.io/DueFlow/"
-    assert keyed["og:image"].endswith("/assets/dashboard.png")
+    assert keyed["og:image"].endswith("/assets/social-preview.png")
+    assert keyed["og:image:width"] == "1280"
+    assert keyed["og:image:height"] == "640"
+    assert keyed["twitter:image"] == keyed["og:image"]
     assert keyed["twitter:card"] == "summary_large_image"
     assert 'rel="canonical" href="https://ustinian5.github.io/DueFlow/"' in html
     assert '"@type": "SoftwareApplication"' in html
@@ -99,12 +103,27 @@ def test_simplified_chinese_site_has_localized_search_metadata() -> None:
     assert keyed["description"] and "本地优先" in keyed["description"]
     assert keyed["og:locale"] == "zh_CN"
     assert keyed["og:url"] == "https://ustinian5.github.io/DueFlow/zh/"
+    assert keyed["og:image"].endswith("/assets/social-preview.png")
+    assert keyed["og:image:width"] == "1280"
+    assert keyed["og:image:height"] == "640"
+    assert keyed["twitter:image"] == keyed["og:image"]
     assert keyed["twitter:card"] == "summary_large_image"
     assert 'rel="canonical" href="https://ustinian5.github.io/DueFlow/zh/"' in html
     assert 'hreflang="en" href="https://ustinian5.github.io/DueFlow/"' in html
     assert 'hreflang="zh-CN" href="https://ustinian5.github.io/DueFlow/zh/"' in html
     assert '"inLanguage": "zh-CN"' in html
     assert parser.headings[0] == "截止信息四处分散。 你的计划不该如此。"
+
+
+def test_social_preview_meets_github_image_requirements() -> None:
+    preview = SITE / "assets" / "social-preview.png"
+    data = preview.read_bytes()
+
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+    assert int.from_bytes(data[16:20], "big") == 1280
+    assert int.from_bytes(data[20:24], "big") == 640
+    assert preview.stat().st_size < 1_000_000
+    assert (ROOT / "docs" / "images" / "social-preview.svg").is_file()
 
 
 def test_english_site_advertises_chinese_alternate() -> None:
