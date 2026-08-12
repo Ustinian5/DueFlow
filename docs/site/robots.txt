@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ustinian5.github.io/DueFlow/sitemap.xml
