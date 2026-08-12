@@ -12,12 +12,17 @@
     <meta name="color-scheme" content="dark">
     <meta name="robots" content="index,follow,max-image-preview:large">
     <link rel="canonical" href="https://ustinian5.github.io/DueFlow/">
+    <link rel="alternate" hreflang="en" href="https://ustinian5.github.io/DueFlow/">
+    <link rel="alternate" hreflang="zh-CN" href="https://ustinian5.github.io/DueFlow/zh/">
+    <link rel="alternate" hreflang="x-default" href="https://ustinian5.github.io/DueFlow/">
     <link rel="icon" href="assets/icon.png" type="image/png">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="styles.css">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="DueFlow">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="zh_CN">
     <meta property="og:title" content="DueFlow — Deadlines in, actionable schedule out">
     <meta
       property="og:description"
@@ -39,6 +44,7 @@
         "applicationCategory": "ProductivityApplication",
         "operatingSystem": "macOS, Linux, Windows",
         "softwareVersion": "0.1.1",
+        "inLanguage": "en",
         "url": "https://ustinian5.github.io/DueFlow/",
         "downloadUrl": "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1",
         "codeRepository": "https://github.com/Ustinian5/DueFlow",
@@ -64,9 +70,12 @@
           <a href="#privacy">Local-first</a>
           <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">v0.1.1</a>
         </nav>
-        <a class="button button-small button-ghost" href="https://github.com/Ustinian5/DueFlow">
-          View on GitHub
-        </a>
+        <div class="header-actions">
+          <a class="language-link" href="zh/" lang="zh-CN" hreflang="zh-CN">中文</a>
+          <a class="button button-small button-ghost" href="https://github.com/Ustinian5/DueFlow">
+            View on GitHub
+          </a>
+        </div>
       </div>
     </header>
 
@@ -117,7 +126,7 @@
 
       <section class="proof-bar" aria-label="Verified project facts">
         <div class="section-shell proof-grid">
-          <div><strong>68</strong><span>project checks</span></div>
+          <div><strong>73</strong><span>project checks</span></div>
           <div><strong>3</strong><span>CI technology gates</span></div>
           <div><strong>0</strong><span>keys needed for demo</span></div>
           <div><strong>MIT</strong><span>open-source license</span></div>
@@ -211,7 +220,15 @@
           <div class="terminal" aria-label="DueFlow installation commands">
             <div class="terminal-header">
               <span>Terminal</span>
-              <button class="copy-button" type="button" data-copy-target="demo-command">Copy</button>
+              <button
+                class="copy-button"
+                type="button"
+                data-copy-target="demo-command"
+                data-copy-success="Copied"
+                data-copy-reset="Copy"
+                data-copy-message="Commands copied to clipboard"
+                data-copy-fallback="Select the commands to copy"
+              >Copy</button>
             </div>
             <pre id="demo-command"><code><span class="prompt">$</span> git clone https://github.com/Ustinian5/DueFlow.git
 <span class="prompt">$</span> cd DueFlow

@@ -138,6 +138,24 @@ a {
   color: var(--text);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-link {
+  padding: 8px 2px;
+  color: var(--muted-strong);
+  font-size: 13px;
+  font-weight: 720;
+  transition: color 160ms ease;
+}
+
+.language-link:hover {
+  color: var(--text);
+}
+
 .button {
   display: inline-flex;
   min-height: 48px;
@@ -782,6 +800,11 @@ a {
 
   .nav-shell {
     min-height: 64px;
+    gap: 14px;
+  }
+
+  .header-actions {
+    gap: 8px;
   }
 
   .nav-links {

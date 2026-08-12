@@ -9,14 +9,14 @@ if (copyButton && copyStatus) {
 
     try {
       await navigator.clipboard.writeText(command);
-      copyButton.textContent = "Copied";
-      copyStatus.textContent = "Commands copied to clipboard";
+      copyButton.textContent = copyButton.dataset.copySuccess || "Copied";
+      copyStatus.textContent = copyButton.dataset.copyMessage || "Commands copied to clipboard";
       window.setTimeout(() => {
-        copyButton.textContent = "Copy";
+        copyButton.textContent = copyButton.dataset.copyReset || "Copy";
         copyStatus.textContent = "";
       }, 2200);
     } catch {
-      copyStatus.textContent = "Select the commands to copy";
+      copyStatus.textContent = copyButton.dataset.copyFallback || "Select the commands to copy";
     }
   });
 }
