@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "dueflow-site-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 const ROOT_URL = new URL("./", self.location.href).href;
 const CORE_URLS = [
   "./",

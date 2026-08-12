@@ -704,6 +704,7 @@ a {
   grid-column: 1 / -1;
 }
 
+.browser-demo-export,
 .browser-demo-conversion {
   display: flex;
   align-items: center;
@@ -712,6 +713,7 @@ a {
   grid-column: 1 / -1;
 }
 
+.browser-demo-export-status,
 .browser-demo-share-status {
   flex-basis: 100%;
   min-height: 18px;
@@ -1020,6 +1022,11 @@ a {
   }
 
   .browser-demo-conversion {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .browser-demo-export {
     align-items: stretch;
     flex-direction: column;
   }

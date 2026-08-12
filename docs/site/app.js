@@ -38,7 +38,13 @@ if (browserDemo) {
   const shareButton = browserDemo.querySelector("[data-demo-share]");
   const shareStatus = browserDemo.querySelector("[data-demo-share-status]");
   const installButton = browserDemo.querySelector("[data-demo-install]");
+  const copyPlanButton = browserDemo.querySelector("[data-demo-copy-plan]");
+  const calendarButton = browserDemo.querySelector("[data-demo-download-calendar]");
+  const exportStatus = browserDemo.querySelector("[data-demo-export-status]");
   let installPrompt = null;
+  let generatedDeadline = null;
+  let generatedMilestones = [];
+  let generatedRisk = "";
 
   const messages = locale === "zh-CN"
     ? {
@@ -57,6 +63,12 @@ if (browserDemo) {
         shareFallback: "可复制此链接分享：https://ustinian5.github.io/DueFlow/zh/",
         installed: "离线样例已安装。",
         installDismissed: "本次未安装，之后仍可再次选择安装。",
+        planTitle: "DueFlow 倒排计划",
+        planCopied: "倒排计划已复制。",
+        calendarDownloaded: "日历文件已下载。",
+        exportUnavailable: "请先生成一个有效的样例计划。",
+        exportFailed: "导出未完成，请重试。",
+        calendarDescription: "由 DueFlow 浏览器样例在本地生成。",
       }
     : {
         invalid: "Enter one valid ISO date, for example 2026-09-30.",
@@ -74,6 +86,12 @@ if (browserDemo) {
         shareFallback: "Copy this link to share: https://ustinian5.github.io/DueFlow/",
         installed: "The offline sample is installed.",
         installDismissed: "Installation was dismissed. You can install it later.",
+        planTitle: "DueFlow reverse plan",
+        planCopied: "The reverse plan was copied.",
+        calendarDownloaded: "The calendar file was downloaded.",
+        exportUnavailable: "Generate a valid sample plan first.",
+        exportFailed: "The export did not complete. Try again.",
+        calendarDescription: "Generated locally by the DueFlow browser sample.",
       };
 
   const shareUrl = locale === "zh-CN"
@@ -84,6 +102,49 @@ if (browserDemo) {
     dateStyle: "medium",
     timeZone: "UTC",
   }).format(date);
+
+  const isoDate = (date) => date.toISOString().slice(0, 10);
+  const icsDate = (date) => isoDate(date).replace(/-/g, "");
+  const escapeIcs = (value) => String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+
+  const buildPlanText = () => [
+    `${messages.planTitle} — ${isoDate(generatedDeadline)}`,
+    ...generatedMilestones.map(({ date, label }) => `- ${isoDate(date)} — ${label}`),
+    generatedRisk,
+    shareUrl,
+  ].join("\n");
+
+  const buildCalendar = () => {
+    const stamp = `${icsDate(generatedDeadline)}T000000Z`;
+    const events = generatedMilestones.flatMap(({ date, label }, index) => {
+      const endDate = new Date(date);
+      endDate.setUTCDate(date.getUTCDate() + 1);
+      return [
+        "BEGIN:VEVENT",
+        `UID:dueflow-demo-${icsDate(date)}-${index}@ustinian5.github.io`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${icsDate(date)}`,
+        `DTEND;VALUE=DATE:${icsDate(endDate)}`,
+        `SUMMARY:${escapeIcs(label)}`,
+        `DESCRIPTION:${escapeIcs(`${messages.calendarDescription} ${messages.summary(formatDate(generatedDeadline))}`)}`,
+        "END:VEVENT",
+      ];
+    });
+    return [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//DueFlow//Browser Demo//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      ...events,
+      "END:VCALENDAR",
+      "",
+    ].join("\r\n");
+  };
 
   const parseIsoDate = (text) => {
     const match = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
@@ -106,16 +167,23 @@ if (browserDemo) {
     event.preventDefault();
     const deadline = parseIsoDate(input?.value || "");
     if (!deadline || !status || !result || !summary || !plan || !risk) {
+      generatedDeadline = null;
+      generatedMilestones = [];
+      generatedRisk = "";
       if (status) status.textContent = messages.invalid;
       if (result) result.hidden = true;
       return;
     }
 
     const offsets = [10, 7, 4, 2, 0];
+    generatedDeadline = deadline;
+    generatedMilestones = messages.milestones.map((label, index) => {
+      const date = new Date(deadline);
+      date.setUTCDate(deadline.getUTCDate() - offsets[index]);
+      return { date, label };
+    });
     plan.replaceChildren();
-    messages.milestones.forEach((label, index) => {
-      const milestoneDate = new Date(deadline);
-      milestoneDate.setUTCDate(deadline.getUTCDate() - offsets[index]);
+    generatedMilestones.forEach(({ date: milestoneDate, label }) => {
       const item = document.createElement("li");
       const dateLabel = document.createElement("time");
       dateLabel.dateTime = milestoneDate.toISOString().slice(0, 10);
@@ -137,8 +205,45 @@ if (browserDemo) {
         : daysRemaining <= 7
           ? messages.tight(daysRemaining)
           : messages.healthy(daysRemaining);
+    generatedRisk = risk.textContent;
     result.hidden = false;
     status.textContent = messages.ready;
+  });
+
+  copyPlanButton?.addEventListener("click", async () => {
+    if (!generatedDeadline || generatedMilestones.length === 0 || !exportStatus) {
+      if (exportStatus) exportStatus.textContent = messages.exportUnavailable;
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(buildPlanText());
+      exportStatus.textContent = messages.planCopied;
+    } catch {
+      exportStatus.textContent = messages.exportFailed;
+    }
+  });
+
+  calendarButton?.addEventListener("click", () => {
+    if (!generatedDeadline || generatedMilestones.length === 0 || !exportStatus) {
+      if (exportStatus) exportStatus.textContent = messages.exportUnavailable;
+      return;
+    }
+
+    try {
+      const blob = new Blob([buildCalendar()], { type: "text/calendar;charset=utf-8" });
+      const objectUrl = URL.createObjectURL(blob);
+      const download = document.createElement("a");
+      download.href = objectUrl;
+      download.download = `dueflow-reverse-plan-${isoDate(generatedDeadline)}.ics`;
+      document.body.append(download);
+      download.click();
+      download.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+      exportStatus.textContent = messages.calendarDownloaded;
+    } catch {
+      exportStatus.textContent = messages.exportFailed;
+    }
   });
 
   shareButton?.addEventListener("click", async () => {
