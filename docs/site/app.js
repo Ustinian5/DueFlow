@@ -37,6 +37,8 @@ if (browserDemo) {
   const risk = browserDemo.querySelector("[data-demo-risk]");
   const shareButton = browserDemo.querySelector("[data-demo-share]");
   const shareStatus = browserDemo.querySelector("[data-demo-share-status]");
+  const installButton = browserDemo.querySelector("[data-demo-install]");
+  let installPrompt = null;
 
   const messages = locale === "zh-CN"
     ? {
@@ -53,6 +55,8 @@ if (browserDemo) {
         shared: "分享面板已打开。",
         copied: "DueFlow 介绍和链接已复制。",
         shareFallback: "可复制此链接分享：https://ustinian5.github.io/DueFlow/zh/",
+        installed: "离线样例已安装。",
+        installDismissed: "本次未安装，之后仍可再次选择安装。",
       }
     : {
         invalid: "Enter one valid ISO date, for example 2026-09-30.",
@@ -68,6 +72,8 @@ if (browserDemo) {
         shared: "The share panel is open.",
         copied: "DueFlow's introduction and link were copied.",
         shareFallback: "Copy this link to share: https://ustinian5.github.io/DueFlow/",
+        installed: "The offline sample is installed.",
+        installDismissed: "Installation was dismissed. You can install it later.",
       };
 
   const shareUrl = locale === "zh-CN"
@@ -156,5 +162,36 @@ if (browserDemo) {
     } catch (error) {
       if (error?.name !== "AbortError") shareStatus.textContent = messages.shareFallback;
     }
+  });
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    installPrompt = event;
+    if (installButton) installButton.hidden = false;
+  });
+
+  installButton?.addEventListener("click", async () => {
+    if (!installPrompt || !shareStatus) return;
+
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    shareStatus.textContent = choice.outcome === "accepted"
+      ? messages.installed
+      : messages.installDismissed;
+    installPrompt = null;
+    installButton.hidden = true;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    installPrompt = null;
+    if (installButton) installButton.hidden = true;
+    if (shareStatus) shareStatus.textContent = messages.installed;
+  });
+}
+
+if ("serviceWorker" in navigator) {
+  const siteRoot = document.documentElement.lang === "zh-CN" ? "../" : "./";
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${siteRoot}service-worker.js`, { scope: siteRoot }).catch(() => {});
   });
 }

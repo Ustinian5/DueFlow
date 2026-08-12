@@ -72,6 +72,7 @@ def test_pages_site_has_complete_static_bundle() -> None:
         "robots.txt",
         "sitemap.xml",
         "site.webmanifest",
+        "service-worker.js",
         ".nojekyll",
         "assets/icon.png",
         "assets/dashboard.png",
@@ -138,7 +139,7 @@ def test_english_site_advertises_chinese_alternate() -> None:
 
     assert 'hreflang="zh-CN" href="https://ustinian5.github.io/DueFlow/zh/"' in html
     assert 'href="zh/" lang="zh-CN" hreflang="zh-CN"' in html
-    assert "<strong>79</strong><span>project checks</span>" in html
+    assert "<strong>80</strong><span>project checks</span>" in html
 
 
 def test_pages_site_links_and_assets_are_valid() -> None:
@@ -221,12 +222,15 @@ def test_pages_site_has_local_browser_sample() -> None:
         assert html.count("data-demo-star") == 1
         assert html.count("data-demo-share") == 2
         assert html.count("data-demo-share-status") == 1
+        assert html.count("data-demo-install") == 1
         assert "2026-09-30" in html
 
     assert "Turn one deadline into a reverse plan." in english
     assert "Nothing is uploaded." in english
+    assert "After the first visit, the sample works offline." in english
     assert "把一个截止日期变成倒排计划。" in chinese
     assert "内容不会上传。" in chinese
+    assert "首次访问后还可离线使用。" in chinese
     assert "Share this local demo" in english
     assert "分享这个本地演示" in chinese
     assert 'form?.addEventListener("submit"' in script
@@ -235,6 +239,10 @@ def test_pages_site_has_local_browser_sample() -> None:
     assert "replaceChildren" in script
     assert "navigator.share(shareData)" in script
     assert "navigator.clipboard.writeText" in script
+    assert 'window.addEventListener("beforeinstallprompt"' in script
+    assert 'installButton?.addEventListener("click"' in script
+    assert 'window.addEventListener("appinstalled"' in script
+    assert "navigator.serviceWorker.register" in script
     assert "AbortError" in script
     assert "https://ustinian5.github.io/DueFlow/zh/" in script
     assert "I turned one deadline into a five-step reverse plan" in script
@@ -268,7 +276,7 @@ def test_simplified_chinese_site_is_accessible_and_tracking_free() -> None:
     assert 'aria-live="polite"' in html
     assert all(not script.get("src", "").startswith("http") for script in parser.scripts)
     assert "data-copy-success=\"已复制\"" in html
-    assert "<strong>79</strong><span>项目检查</span>" in html
+    assert "<strong>80</strong><span>项目检查</span>" in html
 
     combined = html + (SITE / "app.js").read_text(encoding="utf-8")
     for forbidden in ["google-analytics", "gtag(", "segment.com", "posthog", "mixpanel"]:
@@ -281,11 +289,40 @@ def test_pages_manifest_and_discovery_files_match_canonical_url() -> None:
     sitemap = (SITE / "sitemap.xml").read_text(encoding="utf-8")
 
     assert manifest["name"] == "DueFlow"
+    assert manifest["id"] == "./"
+    assert manifest["scope"] == "./"
     assert manifest["start_url"] == "./"
+    assert manifest["display"] == "standalone"
+    assert manifest["categories"] == ["productivity", "utilities"]
     assert manifest["icons"][0]["src"] == "assets/icon.png"
     assert "Sitemap: https://ustinian5.github.io/DueFlow/sitemap.xml" in robots
     assert "<loc>https://ustinian5.github.io/DueFlow/</loc>" in sitemap
     assert "<loc>https://ustinian5.github.io/DueFlow/zh/</loc>" in sitemap
+
+
+def test_pages_browser_sample_has_scoped_offline_cache() -> None:
+    worker = (SITE / "service-worker.js").read_text(encoding="utf-8")
+
+    for expected in [
+        'const CACHE_PREFIX = "dueflow-site-"',
+        '"./zh/index.html"',
+        '"./site.webmanifest"',
+        '"./assets/icon.png"',
+        'self.addEventListener("install"',
+        'self.addEventListener("activate"',
+        'self.addEventListener("fetch"',
+        "cache.addAll(CORE_URLS)",
+        "self.skipWaiting()",
+        "self.clients.claim()",
+        'request.method !== "GET"',
+        "url.origin !== self.location.origin",
+        'request.mode === "navigate"',
+        "caches.match(ROOT_URL)",
+    ]:
+        assert expected in worker
+
+    assert "https://" not in worker
+    assert "http://" not in worker
 
 
 def test_pages_workflow_uses_least_required_permissions_and_current_actions() -> None:

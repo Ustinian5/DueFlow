@@ -1,9 +1,13 @@
 {
   "name": "DueFlow",
   "short_name": "DueFlow",
+  "id": "./",
+  "scope": "./",
+  "lang": "en",
   "description": "Turn scattered deadline information into an actionable local schedule.",
   "start_url": "./",
   "display": "standalone",
+  "categories": ["productivity", "utilities"],
   "background_color": "#0b0d12",
   "theme_color": "#0b0d12",
   "icons": [
