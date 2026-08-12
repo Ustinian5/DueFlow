@@ -31,7 +31,7 @@
 
 ## Try the Browser Sample - No Install
 
-Edit one deadline notice and generate five reverse-plan milestones plus a deadline-risk summary directly in your browser. The interaction runs locally in the tab: no signup, API key, or upload is required.
+Edit one deadline notice and generate five reverse-plan milestones plus a deadline-risk summary directly in your browser. After the first visit, the sample also works offline; copy the plan or download a standard `.ics` calendar without signup, an API key, or an upload.
 
 <p align="center">
   <a href="https://ustinian5.github.io/DueFlow/#demo"><strong>Open the 60-second browser sample →</strong></a> ·
@@ -39,7 +39,7 @@ Edit one deadline notice and generate five reverse-plan milestones plus a deadli
 </p>
 
 <a href="https://ustinian5.github.io/DueFlow/#demo">
-  <img src="docs/images/browser-sample-en.png" alt="DueFlow browser sample generating five reverse-plan milestones from one deadline notice">
+  <img src="docs/images/browser-sample-en.png" alt="DueFlow browser sample generating, copying, and exporting five reverse-plan milestones from one deadline notice">
 </a>
 
 <p align="center"><sub>If the sample fits your workflow, use GitHub's Star button to follow future releases.</sub></p>

@@ -404,7 +404,8 @@ def main() -> None:
     story.extend(
         [
             Paragraph(
-                "No signup, API key, or upload. The sample generates five reverse-plan milestones in the current tab.",
+                "After the first visit, the sample also works offline. Copy the plan or download a standard .ics "
+                "calendar; no signup, API key, or upload is required.",
                 styles["caption"],
             ),
             PageBreak(),

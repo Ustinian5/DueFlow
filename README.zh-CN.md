@@ -31,7 +31,7 @@
 
 ## 无需安装，直接在浏览器试用
 
-编辑一条截止通知，即可在浏览器中生成 5 个倒排节点和截止风险摘要。交互完全在当前标签页运行，无需注册、API 密钥，也不会上传内容。
+编辑一条截止通知，即可在浏览器中生成 5 个倒排节点和截止风险摘要。首次访问后可离线使用，还能复制计划或下载标准 `.ics` 日历；无需注册、API 密钥，也不会上传内容。
 
 <p align="center">
   <a href="https://ustinian5.github.io/DueFlow/zh/#demo"><strong>打开 60 秒浏览器样例 →</strong></a> ·
@@ -39,7 +39,7 @@
 </p>
 
 <a href="https://ustinian5.github.io/DueFlow/zh/#demo">
-  <img src="docs/images/browser-sample-zh.png" alt="DueFlow 浏览器样例从一条截止通知生成 5 个倒排节点">
+  <img src="docs/images/browser-sample-zh.png" alt="DueFlow 浏览器样例从一条截止通知生成、复制并导出 5 个倒排节点">
 </a>
 
 <p align="center"><sub>如果样例适合你的工作流，可使用 GitHub 的 Star 按钮关注后续版本。</sub></p>

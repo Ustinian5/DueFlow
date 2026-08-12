@@ -258,6 +258,7 @@ def test_pages_site_has_local_browser_sample() -> None:
     assert "BEGIN:VEVENT" in script
     assert "END:VEVENT" in script
     assert "DTSTART;VALUE=DATE" in script
+    assert script.count('"PRODID:-//DueFlow//Browser Demo//EN",') == 1
     assert "DTEND;VALUE=DATE" in script
     assert "URL.createObjectURL" in script
     assert "URL.revokeObjectURL" in script
@@ -393,11 +394,17 @@ def test_readme_links_to_live_project_site() -> None:
     assert "conda run -n dueflow python scripts/run_demo.py" in chinese
 
     assert "Try the Browser Sample - No Install" in readme
+    assert "After the first visit, the sample also works offline" in readme
+    assert "copy the plan or download a standard `.ics` calendar" in readme
     assert 'href="https://ustinian5.github.io/DueFlow/#demo"' in readme
     assert 'src="docs/images/browser-sample-en.png"' in readme
+    assert "generating, copying, and exporting five reverse-plan milestones" in readme
     assert "无需安装，直接在浏览器试用" in chinese
+    assert "首次访问后可离线使用" in chinese
+    assert "复制计划或下载标准 `.ics` 日历" in chinese
     assert 'href="https://ustinian5.github.io/DueFlow/zh/#demo"' in chinese
     assert 'src="docs/images/browser-sample-zh.png"' in chinese
+    assert "生成、复制并导出 5 个倒排节点" in chinese
 
     for relative_path in [
         "docs/images/browser-sample-en.png",
@@ -414,6 +421,8 @@ def test_readme_links_to_live_project_site() -> None:
     pdf_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     assert len(pdf.pages) == 7
     assert "Open the 60-second browser sample" in pdf_text
+    assert "sample also works offline" in pdf_text
+    assert "download a standard .ics calendar" in pdf_text
     assert "Why DueFlow" in pdf_text
     assert "DueFlow - MIT licensed - github.com/Ustinian5/DueFlow" in pdf_text
     assert "<div" not in pdf_text
