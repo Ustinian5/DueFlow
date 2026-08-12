@@ -196,6 +196,7 @@ def test_pages_site_promotes_verified_standalone_preview() -> None:
         assert PREVIEW_CHECKSUM in parser.links
         assert html.count("data-preview-download") == 2
         assert f'"downloadUrl": "{PREVIEW_DOWNLOAD}"' in html
+        assert '"operatingSystem": "macOS (Apple Silicon)"' in html
 
     assert "Download for Apple Silicon" in english
     assert "No Python or Conda at runtime" in english
