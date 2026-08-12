@@ -10,6 +10,11 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docs" / "site"
 ZH_SITE = SITE / "zh"
+PREVIEW_DOWNLOAD = (
+    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/"
+    "DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
+)
+PREVIEW_CHECKSUM = f"{PREVIEW_DOWNLOAD}.sha256"
 
 
 class SiteParser(HTMLParser):
@@ -180,6 +185,23 @@ def test_simplified_chinese_site_links_and_assets_are_valid() -> None:
     assert external_hosts == {"github.com"}
     assert "https://github.com/Ustinian5/DueFlow" in parser.links
     assert "../" in parser.links
+
+
+def test_pages_site_promotes_verified_standalone_preview() -> None:
+    english, english_parser = parse_site()
+    chinese, chinese_parser = parse_site(ZH_SITE / "index.html")
+
+    for html, parser in [(english, english_parser), (chinese, chinese_parser)]:
+        assert parser.links.count(PREVIEW_DOWNLOAD) == 2
+        assert PREVIEW_CHECKSUM in parser.links
+        assert html.count("data-preview-download") == 2
+        assert f'"downloadUrl": "{PREVIEW_DOWNLOAD}"' in html
+        assert '"operatingSystem": "macOS (Apple Silicon)"' in html
+
+    assert "Download for Apple Silicon" in english
+    assert "No Python or Conda at runtime" in english
+    assert "下载 Apple Silicon 预览版" in chinese
+    assert "运行时无需 Python 或 Conda" in chinese
 
 
 def test_pages_site_is_accessible_and_tracking_free() -> None:

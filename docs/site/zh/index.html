@@ -44,11 +44,11 @@
         "@type": "SoftwareApplication",
         "name": "DueFlow",
         "applicationCategory": "ProductivityApplication",
-        "operatingSystem": "macOS, Linux, Windows",
+        "operatingSystem": "macOS (Apple Silicon)",
         "softwareVersion": "0.1.1",
         "inLanguage": "zh-CN",
         "url": "https://ustinian5.github.io/DueFlow/zh/",
-        "downloadUrl": "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1",
+        "downloadUrl": "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip",
         "codeRepository": "https://github.com/Ustinian5/DueFlow",
         "license": "https://opensource.org/license/mit",
         "isAccessibleForFree": true,
@@ -90,12 +90,17 @@
             风险检查、提醒与日历导出，并在你的设备上完成整个流程。
           </p>
           <div class="hero-actions">
-            <a class="button button-primary" href="#demo">运行 60 秒演示</a>
+            <a
+              class="button button-primary"
+              data-preview-download
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
+            >下载 Apple Silicon 预览版</a>
             <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow">在 GitHub 收藏 DueFlow</a>
+            <a class="button button-ghost" href="#demo">运行 60 秒演示</a>
           </div>
           <ul class="trust-list" aria-label="项目保证">
-            <li>无需注册</li>
-            <li>演示无需 API 密钥</li>
+            <li>自包含预览版</li>
+            <li>运行时无需 Python 或 Conda</li>
             <li>MIT 许可证</li>
           </ul>
         </div>
@@ -240,13 +245,21 @@
       <section class="content-section section-shell">
         <div class="release-card">
           <div>
-            <p class="eyebrow">最新源码版本</p>
-            <h2>DueFlow v0.1.1</h2>
-            <p>已分别通过普通克隆和 GitHub 可下载源码归档验证。</p>
+            <p class="eyebrow">Apple Silicon 开发者预览版</p>
+            <h2>macOS 版 DueFlow v0.1.1</h2>
+            <p>自包含 <code>.app.zip</code> 内置仅回环地址后端，运行时无需 Python 或 Conda。</p>
           </div>
           <div class="release-actions">
-            <a class="button button-primary" href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">查看版本</a>
-            <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow/issues">提交反馈</a>
+            <a
+              class="button button-primary"
+              data-preview-download
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
+            >下载预览版</a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip.sha256"
+            >校验 SHA256</a>
+            <a class="button button-ghost" href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">版本说明</a>
           </div>
         </div>
       </section>
