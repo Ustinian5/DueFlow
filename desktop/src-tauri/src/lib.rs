@@ -17,6 +17,7 @@ use tauri::{
 use tauri_plugin_global_shortcut::ShortcutState;
 
 const QUICK_INPUT_EVENT: &str = "dueflow://quick-input";
+const BACKEND_SIDECAR_NAME: &str = "dueflow-backend";
 const MAX_SKILL_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_PET_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_PET_ASSET_BYTES: u64 = 8 * 1024 * 1024;
@@ -1148,6 +1149,19 @@ mod tests {
         );
     }
 
+    #[test]
+    fn resolves_bundled_backend_next_to_packaged_executable() {
+        let root = test_temp_dir("bundled-backend-path");
+        let executable = root.join("dueflow-desktop");
+
+        assert_eq!(
+            bundled_backend_candidate(&executable).unwrap(),
+            root.join(backend_sidecar_file_name())
+        );
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     fn test_temp_dir(label: &str) -> PathBuf {
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -1298,6 +1312,39 @@ fn ensure_backend(paths: &BackendPaths) -> Result<BackendLaunch, String> {
         });
     }
 
+    if !env_flag("DUEFLOW_SKIP_BUNDLED_BACKEND") {
+        if let Some(sidecar_path) = find_bundled_backend() {
+            let command_display =
+                format!("{} --host {} --port {}", sidecar_path.display(), host, port);
+            let mut command = Command::new(&sidecar_path);
+            command
+                .arg("--host")
+                .arg(&host)
+                .arg("--port")
+                .arg(port.to_string())
+                .env("DATABASE_PATH", &paths.database_path)
+                .env("INBOX_PATH", &paths.inbox_path)
+                .env("EXPORT_PATH", &paths.export_path)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+            let child = command.spawn().map_err(|error| {
+                format!(
+                    "failed to spawn bundled backend {}: {error}",
+                    sidecar_path.display()
+                )
+            })?;
+            return wait_for_backend(
+                child,
+                paths,
+                &host,
+                port,
+                "bundled_sidecar",
+                command_display,
+            );
+        }
+    }
+
     let project_root = find_project_root()
         .ok_or_else(|| "could not find project root containing api/desktop.py".to_string())?;
     let backend_command = env::var("DUEFLOW_BACKEND_CMD").unwrap_or_else(|_| {
@@ -1307,7 +1354,7 @@ fn ensure_backend(paths: &BackendPaths) -> Result<BackendLaunch, String> {
     });
     let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
 
-    let mut child = Command::new(shell)
+    let child = Command::new(shell)
         .arg("-lc")
         .arg(&backend_command)
         .current_dir(project_root)
@@ -1320,19 +1367,30 @@ fn ensure_backend(paths: &BackendPaths) -> Result<BackendLaunch, String> {
         .spawn()
         .map_err(|error| format!("failed to spawn backend process: {error}"))?;
 
-    for _ in 0..30 {
-        if backend_ready(&host, port) {
+    wait_for_backend(
+        child,
+        paths,
+        &host,
+        port,
+        "managed_process",
+        backend_command,
+    )
+}
+
+fn wait_for_backend(
+    mut child: Child,
+    paths: &BackendPaths,
+    host: &str,
+    port: u16,
+    source: &str,
+    command: String,
+) -> Result<BackendLaunch, String> {
+    let readiness_attempts = if source == "bundled_sidecar" { 120 } else { 30 };
+    for _ in 0..readiness_attempts {
+        if backend_ready(host, port) {
             return Ok(BackendLaunch {
                 child: Some(child),
-                status: BackendStatus::new(
-                    paths,
-                    "ready",
-                    "managed_process",
-                    &host,
-                    port,
-                    Some(backend_command),
-                    None,
-                ),
+                status: BackendStatus::new(paths, "ready", source, host, port, Some(command), None),
             });
         }
         if let Ok(Some(status)) = child.try_wait() {
@@ -1348,13 +1406,40 @@ fn ensure_backend(paths: &BackendPaths) -> Result<BackendLaunch, String> {
         status: BackendStatus::new(
             paths,
             "starting",
-            "managed_process",
-            &host,
+            source,
+            host,
             port,
-            Some(backend_command),
+            Some(command),
             Some("backend process is still starting after readiness timeout".to_string()),
         ),
     })
+}
+
+fn find_bundled_backend() -> Option<PathBuf> {
+    if let Ok(path) = env::var("DUEFLOW_BUNDLED_BACKEND") {
+        let candidate = PathBuf::from(path);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+
+    let executable = env::current_exe().ok()?;
+    let candidate = bundled_backend_candidate(&executable)?;
+    candidate.is_file().then_some(candidate)
+}
+
+fn bundled_backend_candidate(executable: &Path) -> Option<PathBuf> {
+    executable
+        .parent()
+        .map(|directory| directory.join(backend_sidecar_file_name()))
+}
+
+fn backend_sidecar_file_name() -> String {
+    if cfg!(target_os = "windows") {
+        format!("{BACKEND_SIDECAR_NAME}.exe")
+    } else {
+        BACKEND_SIDECAR_NAME.to_string()
+    }
 }
 
 fn backend_ready(host: &str, port: u16) -> bool {

@@ -22,6 +22,10 @@ export async function writeReleaseManifest({
   bundle,
   sha256,
   bytes,
+  backend,
+  backendSha256,
+  backendBytes,
+  backendSelfCheck,
 }) {
   requireOption(manifestOut, "--manifest-out");
   requireOption(version, "--version");
@@ -30,8 +34,14 @@ export async function writeReleaseManifest({
   requireOption(bundle, "--bundle");
   requireOption(sha256, "--sha256");
   requireOption(bytes, "--bytes");
+  requireOption(backend, "--backend");
+  requireOption(backendSha256, "--backend-sha256");
+  requireOption(backendBytes, "--backend-bytes");
+  requireOption(backendSelfCheck, "--backend-self-check");
   validateBundleName(bundle);
   validateSha256(sha256);
+  validateBackendName(backend);
+  validateSha256(backendSha256);
 
   const manifest = {
     product: "DueFlow Desktop",
@@ -43,12 +53,43 @@ export async function writeReleaseManifest({
     bytes: parseBytes(bytes),
     signed: false,
     notarized: false,
+    backend: {
+      bundled: true,
+      file: backend,
+      runtime_directory: "../Frameworks",
+      sha256: backendSha256,
+      bytes: parseBytes(backendBytes),
+      self_check: await readBackendSelfCheck(backendSelfCheck),
+    },
     preflight: await readPreflightSummary(preflightSummary),
   };
 
   await mkdir(dirname(manifestOut), { recursive: true });
   await writeFile(manifestOut, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
   return manifest;
+}
+
+async function readBackendSelfCheck(path) {
+  if (!path || !existsSync(path)) throw new Error("Release manifest bundled backend self-check file is missing.");
+  const payload = JSON.parse(await readFile(path, "utf-8"));
+  if (
+    !payload ||
+    payload.service !== "dueflow-backend" ||
+    payload.status !== "ok" ||
+    !Array.isArray(payload.required_routes)
+  ) {
+    throw new Error("Release manifest bundled backend self-check is invalid.");
+  }
+  const requiredRoutes = [
+    "/desktop/about",
+    "/desktop/health",
+    "/desktop/overview",
+    "/desktop/self-check",
+  ];
+  if (!requiredRoutes.every((route) => payload.required_routes.includes(route))) {
+    throw new Error("Release manifest bundled backend self-check is missing required routes.");
+  }
+  return payload;
 }
 
 async function readPreflightSummary(path) {
@@ -96,6 +137,12 @@ function validateBundleName(value) {
   if (!value.endsWith(".app.zip")) throw new Error(`Release manifest bundle must point to an app zip: ${value}`);
 }
 
+function validateBackendName(value) {
+  if (!/^dueflow-backend(?:\.exe)?$/.test(value)) {
+    throw new Error(`Release manifest backend must be the packaged DueFlow sidecar: ${value}`);
+  }
+}
+
 function validateSha256(value) {
   if (!/^[a-fA-F0-9]{64}$/.test(value)) throw new Error(`Release manifest sha256 must be a 64-character hex digest: ${value}`);
 }
@@ -114,6 +161,10 @@ function parseArgs(args) {
     bundle: null,
     sha256: null,
     bytes: null,
+    backend: null,
+    backendSha256: null,
+    backendBytes: null,
+    backendSelfCheck: null,
   };
 
   const keys = {
@@ -125,6 +176,10 @@ function parseArgs(args) {
     "--bundle": "bundle",
     "--sha256": "sha256",
     "--bytes": "bytes",
+    "--backend": "backend",
+    "--backend-sha256": "backendSha256",
+    "--backend-bytes": "backendBytes",
+    "--backend-self-check": "backendSelfCheck",
   };
 
   for (let index = 0; index < args.length; index += 1) {

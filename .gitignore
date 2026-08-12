@@ -21,8 +21,11 @@ yarn-error.log*
 desktop/node_modules/
 desktop/dist/
 desktop/release/
+desktop/.sidecar-build/
 desktop/*.tsbuildinfo
 desktop/.dueflow-preflight-summary.json
+desktop/src-tauri/binaries/dueflow-backend-*
+desktop/src-tauri/binaries/.dueflow-backend/
 desktop/src-tauri/target/
 
 reference/

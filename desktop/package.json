@@ -22,6 +22,7 @@
     "test:smoke": "node scripts/run-desktop-smoke.mjs",
     "test:preflight": "node scripts/run-preflight.mjs --fixture tests/fixtures/self-check-ok.json --about-fixture tests/fixtures/about-ok.json",
     "test:release-manifest": "node tests/release-manifest.test.mjs",
+    "build:sidecar": "bash scripts/build-backend-sidecar.sh",
     "preview": "vite preview --host 127.0.0.1",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",

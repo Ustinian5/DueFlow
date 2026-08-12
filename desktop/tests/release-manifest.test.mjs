@@ -6,12 +6,25 @@ import { join } from "node:path";
 import { writeReleaseManifest } from "../scripts/write-release-manifest.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "dueflow-release-manifest-"));
+const backendSelfCheckPath = join(tempDir, "backend-self-check.json");
+const backendSelfCheck = {
+  service: "dueflow-backend",
+  status: "ok",
+  required_routes: [
+    "/desktop/about",
+    "/desktop/health",
+    "/desktop/overview",
+    "/desktop/self-check",
+  ],
+};
+await writeFile(backendSelfCheckPath, `${JSON.stringify(backendSelfCheck)}\n`, "utf-8");
 
 try {
   await testWritesTraceableManifest();
   await testWritesNullPreflightWhenSkipped();
   await testRejectsInvalidSha();
   await testRejectsPreflightWithoutLimits();
+  await testRejectsInvalidBackendSelfCheck();
   console.log("release manifest tests passed");
 } finally {
   await rm(tempDir, { recursive: true, force: true });
@@ -50,6 +63,10 @@ async function testWritesTraceableManifest() {
     bundle: "DueFlow-Desktop_0.1.0_arm64_20260707T000000Z.app.zip",
     sha256: "a".repeat(64),
     bytes: "4096",
+    backend: "dueflow-backend",
+    backendSha256: "d".repeat(64),
+    backendBytes: "8192",
+    backendSelfCheck: backendSelfCheckPath,
   });
   const persisted = JSON.parse(await readFile(manifestPath, "utf-8"));
 
@@ -58,6 +75,11 @@ async function testWritesTraceableManifest() {
   assert.equal(persisted.bytes, 4096);
   assert.equal(persisted.signed, false);
   assert.equal(persisted.notarized, false);
+  assert.equal(persisted.backend.bundled, true);
+  assert.equal(persisted.backend.file, "dueflow-backend");
+  assert.equal(persisted.backend.runtime_directory, "../Frameworks");
+  assert.equal(persisted.backend.bytes, 8192);
+  assert.deepEqual(persisted.backend.self_check, backendSelfCheck);
   assert.deepEqual(persisted.preflight, preflight);
 }
 
@@ -73,6 +95,10 @@ async function testWritesNullPreflightWhenSkipped() {
     bundle: "DueFlow-Desktop_0.1.0_x64_20260707T010000Z.app.zip",
     sha256: "b".repeat(64),
     bytes: "2048",
+    backend: "dueflow-backend",
+    backendSha256: "e".repeat(64),
+    backendBytes: "4096",
+    backendSelfCheck: backendSelfCheckPath,
   });
   const persisted = JSON.parse(await readFile(manifestPath, "utf-8"));
 
@@ -92,6 +118,10 @@ async function testRejectsInvalidSha() {
         bundle: "DueFlow-Desktop_0.1.0_arm64_20260707T020000Z.app.zip",
         sha256: "not-a-sha",
         bytes: "1024",
+        backend: "dueflow-backend",
+        backendSha256: "f".repeat(64),
+        backendBytes: "4096",
+        backendSelfCheck: backendSelfCheckPath,
       }),
     /sha256/,
   );
@@ -126,7 +156,39 @@ async function testRejectsPreflightWithoutLimits() {
         bundle: "DueFlow-Desktop_0.1.0_arm64_20260707T030000Z.app.zip",
         sha256: "c".repeat(64),
         bytes: "1024",
+        backend: "dueflow-backend",
+        backendSha256: "1".repeat(64),
+        backendBytes: "4096",
+        backendSelfCheck: backendSelfCheckPath,
       }),
     /intake limits/,
+  );
+}
+
+async function testRejectsInvalidBackendSelfCheck() {
+  const invalidSelfCheckPath = join(tempDir, "invalid-backend-self-check.json");
+  await writeFile(
+    invalidSelfCheckPath,
+    `${JSON.stringify({ service: "dueflow-backend", status: "error", required_routes: [] })}\n`,
+    "utf-8",
+  );
+
+  await assert.rejects(
+    () =>
+      writeReleaseManifest({
+        manifestOut: join(tempDir, "invalid-backend", "DueFlow.manifest.json"),
+        preflightSummary: null,
+        version: "0.1.0",
+        arch: "arm64",
+        createdAt: "20260707T040000Z",
+        bundle: "DueFlow-Desktop_0.1.0_arm64_20260707T040000Z.app.zip",
+        sha256: "2".repeat(64),
+        bytes: "1024",
+        backend: "dueflow-backend",
+        backendSha256: "3".repeat(64),
+        backendBytes: "4096",
+        backendSelfCheck: invalidSelfCheckPath,
+      }),
+    /backend self-check is invalid/,
   );
 }

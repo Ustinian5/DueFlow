@@ -60,6 +60,7 @@ def test_required_open_source_files_exist() -> None:
         "SECURITY.md",
         ".gitattributes",
         "requirements.txt",
+        "requirements-release.txt",
         "pyproject.toml",
         "environment.yml",
         "desktop/package.json",
@@ -182,18 +183,28 @@ def test_python_dependency_manifests_stay_in_sync() -> None:
         for line in read_text("requirements.txt").splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
+    release_requirements = [
+        line.strip()
+        for line in read_text("requirements-release.txt").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
     pyproject = tomllib.loads(read_text("pyproject.toml"))
     runtime_dependencies = pyproject["project"]["dependencies"]
     dev_dependencies = pyproject["project"]["optional-dependencies"]["dev"]
+    release_dependencies = pyproject["project"]["optional-dependencies"]["release"]
     environment = read_text("environment.yml")
 
     requirement_names = {requirement_name(item) for item in requirements}
     runtime_names = {requirement_name(item) for item in runtime_dependencies}
     dev_names = {requirement_name(item) for item in dev_dependencies}
+    release_requirement_names = {requirement_name(item) for item in release_requirements}
+    release_names = {requirement_name(item) for item in release_dependencies}
 
     assert runtime_names == requirement_names - dev_names
     assert dev_names == {"pytest"}
+    assert release_names == release_requirement_names == {"pyinstaller"}
     assert "- -r requirements.txt" in environment
+    assert "- -r requirements-release.txt" in environment
 
 
 def test_package_lock_root_matches_desktop_package_manifest() -> None:
@@ -270,6 +281,9 @@ def test_gitignore_excludes_local_private_and_generated_artifacts() -> None:
         "desktop/node_modules/",
         "desktop/dist/",
         "desktop/release/",
+        "desktop/.sidecar-build/",
+        "desktop/src-tauri/binaries/dueflow-backend-*",
+        "desktop/src-tauri/binaries/.dueflow-backend/",
         "desktop/src-tauri/target/",
         "*.egg-info/",
         "reference/",
@@ -300,6 +314,9 @@ def test_git_tracked_files_exclude_private_and_generated_artifacts() -> None:
             or path.startswith("desktop/node_modules/")
             or path.startswith("desktop/dist/")
             or path.startswith("desktop/release/")
+            or path.startswith("desktop/.sidecar-build/")
+            or path.startswith("desktop/src-tauri/binaries/dueflow-backend-")
+            or path.startswith("desktop/src-tauri/binaries/.dueflow-backend/")
             or path.startswith("desktop/src-tauri/target/")
             or "__pycache__/" in path
             or path.endswith((".pyc", ".db", ".db-shm", ".db-wal"))

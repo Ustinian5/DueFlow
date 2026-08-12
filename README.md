@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml"><img alt="CI" src="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml/badge.svg"></a>
   <a href="https://ustinian5.github.io/DueFlow/"><img alt="Project site" src="https://img.shields.io/badge/project-site-ff4b5c"></a>
+  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1"><img alt="Apple Silicon developer preview" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20preview-111111?logo=apple"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white">
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-3DDC97">
@@ -20,6 +21,7 @@
 
 <p align="center">
   <a href="https://ustinian5.github.io/DueFlow/">Project site</a> ·
+  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">Download preview</a> ·
   <a href="#60-second-local-demo">60-second demo</a> ·
   <a href="#desktop-development">Desktop development</a> ·
   <a href="docs/product_requirements.md">Product requirements</a> ·
@@ -71,7 +73,7 @@ Generated files appear in `exports/`, including `todo.md`, `plan.md`, `summary.m
 
 ## Current Status
 
-DueFlow `0.1.1` is ready for local development and open-source review. macOS packaging is implemented as a zipped `.app` bundle. Developer ID signing, notarization, and DMG distribution are documented in the release guide.
+DueFlow `0.1.1` is ready for local development and open-source review. The Apple Silicon developer preview is a self-contained zipped `.app`: its loopback-only API sidecar is bundled, so testers do not need Python or Conda at runtime. The preview is unsigned and not notarized; the distribution boundary is documented in the release guide.
 
 The desktop architecture uses its own Tauri/Python/React implementation. OpenPets is referenced for interaction and architecture research only. DueFlow does not depend on OpenPets and does not import its packages, code, or assets.
 
@@ -231,6 +233,10 @@ What the gates cover:
 
 ## Release
 
+### Download the Apple Silicon developer preview
+
+Download the `.app.zip`, checksum, and release manifest from [DueFlow v0.1.1](https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1). The manifest records the bundled backend hash and its packaging-time self-check. This developer preview is unsigned and not notarized; use it only if you are comfortable testing an open-source development build.
+
 For local macOS packaging:
 
 ```bash
@@ -238,7 +244,7 @@ cd desktop
 npm run release:mac
 ```
 
-The release script runs preflight checks, builds the Tauri app, verifies the `.app` bundle, then writes:
+The release script builds and self-checks the standalone local API sidecar, runs preflight checks, builds the Tauri app, verifies the `.app` bundle, then writes:
 
 - `desktop/release/DueFlow-Desktop_<version>_<arch>_<timestamp>.app.zip`
 - `desktop/release/*.sha256`
