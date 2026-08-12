@@ -1,25 +1,73 @@
-# DueFlow
+<div align="center">
+  <img src="desktop/src-tauri/icons/128x128@2x.png" width="112" alt="DueFlow app icon">
+  <h1>DueFlow</h1>
+  <p><strong>Turn scattered deadline information into an actionable schedule—locally.</strong></p>
+  <p>A local-first deadline assistant with OCR-ready intake, LLM extraction, risk checks, calendar exports, and a Tauri desktop pet.</p>
+</div>
 
-DueFlow is a local-first DDL and schedule assistant with a desktop pet interface. It turns screenshots, files, notifications, pasted text and webhook payloads into an Inbox, extracts deadline tasks with an LLM-compatible provider, then automatically generates schedules, risk checks, reminders and exports that users can adjust afterward.
+<p align="center">
+  <a href="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml"><img alt="CI" src="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml/badge.svg"></a>
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
+  <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white">
+  <img alt="Local first" src="https://img.shields.io/badge/data-local--first-3DDC97">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+</p>
 
-The desktop work is inspired by OpenPets as an architecture reference only. DueFlow does not depend on OpenPets, does not copy OpenPets code or assets, and keeps its own Tauri/Python/React implementation.
+<p align="center">
+  <a href="#60-second-local-demo">60-second demo</a> ·
+  <a href="#desktop-development">Desktop development</a> ·
+  <a href="docs/product_requirements.md">Product requirements</a> ·
+  <a href="ROADMAP.md">Roadmap</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-## What It Does
+![DueFlow dashboard showing Inbox, task, plan and risk workflows](docs/images/01-dashboard.png)
 
-- Collects text, Markdown, PDF, image/OCR-ready files, local Inbox files and webhook payloads into a unified Inbox.
-- Extracts DDL tasks, deadlines, deliverables, submit methods, missing information and source quotes.
-- Automatically turns recognized DDL information into editable schedule items.
-- Generates reverse plans, risk checks, Markdown exports and calendar `.ics` files.
-- Ships a Tauri desktop shell with a transparent always-on-top pet, a lightweight schedule surface and a control center for necessary settings and quick fixes.
-- Lets the pet accept file drops, show status changes, surface warnings and update the schedule surface.
-- Supports local manifest-based desktop pet appearances and local read-only skill manifests with validation and permission boundaries.
-- Provides database backup/restore, diagnostics export, self-checks and reproducible release gates.
+DueFlow turns screenshots, files, notifications, pasted text, and webhook payloads into an Inbox. It extracts deadline tasks with an LLM-compatible provider, then generates editable schedules, reverse plans, risk checks, reminders, Markdown reports, and calendar files.
+
+> **Try it without an API key.** The default `mock` provider runs the complete local demo deterministically.
+
+## Why DueFlow
+
+| What you have | What DueFlow produces |
+|---|---|
+| Course notices, internship emails, competition announcements | Structured tasks with deadlines, deliverables, and submission details |
+| Screenshots, PDFs, Markdown, text files, webhook payloads | One deduplicated local Inbox with source references |
+| A deadline and too many unknowns | Reverse plans, missing-information checks, and risk flags |
+| A schedule you need elsewhere | Editable Markdown, todo lists, summaries, and calendar `.ics` exports |
+
+## Highlights
+
+- **Local-first by default** — SQLite data, Inbox files, exports, backups, and diagnostics stay on your machine.
+- **Multiple intake paths** — text, Markdown, PDF, OCR-ready images, file drops, local Inbox scanning, and webhooks.
+- **Actionable extraction** — deadlines, deliverables, submission methods, missing information, and source quotes.
+- **Planning, not just parsing** — editable schedule items, reverse plans, risk checks, reminders, and exports.
+- **Desktop companion** — a Tauri 2 shell with a transparent always-on-top pet and a separate schedule surface.
+- **Reproducible verification** — mock-provider tests, desktop smoke tests, backup/restore checks, and release gates.
+
+## 60-Second Local Demo
+
+```bash
+git clone https://github.com/Ustinian5/DueFlow.git
+cd DueFlow
+conda env create -f environment.yml
+conda run -n dueflow python scripts/run_demo.py
+```
+
+Expected result:
+
+```text
+DueFlow demo completed
+processed=3 tasks=3 plans=17 risks=5
+```
+
+Generated files appear in `exports/`, including `todo.md`, `plan.md`, `summary.md`, `calendar.ics`, and `submission_report.md`.
 
 ## Current Status
 
-DueFlow is ready for local development and review as an open-source desktop project. macOS packaging is implemented as a zipped `.app` bundle. Developer ID signing, notarization and DMG distribution are documented but require project-owned Apple credentials.
+DueFlow `0.1.0` is ready for local development and open-source review. macOS packaging is implemented as a zipped `.app` bundle. Developer ID signing, notarization, and DMG distribution are documented in the release guide.
 
-The default LLM provider is `mock`, so the project can be tested without an API key. Real OpenAI-compatible providers can be configured through `.env`.
+The desktop architecture uses its own Tauri/Python/React implementation. OpenPets is referenced for interaction and architecture research only. DueFlow does not depend on OpenPets and does not import its packages, code, or assets.
 
 ## Architecture
 
