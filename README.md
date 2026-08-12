@@ -65,7 +65,7 @@ Generated files appear in `exports/`, including `todo.md`, `plan.md`, `summary.m
 
 ## Current Status
 
-DueFlow `0.1.0` is ready for local development and open-source review. macOS packaging is implemented as a zipped `.app` bundle. Developer ID signing, notarization, and DMG distribution are documented in the release guide.
+DueFlow `0.1.1` is ready for local development and open-source review. macOS packaging is implemented as a zipped `.app` bundle. Developer ID signing, notarization, and DMG distribution are documented in the release guide.
 
 The desktop architecture uses its own Tauri/Python/React implementation. OpenPets is referenced for interaction and architecture research only. DueFlow does not depend on OpenPets and does not import its packages, code, or assets.
 

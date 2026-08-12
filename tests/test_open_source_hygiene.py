@@ -6,6 +6,8 @@ import subprocess
 import tomllib
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
@@ -30,6 +32,15 @@ SECRET_SCAN_SKIP_SUFFIXES = {
 
 def read_text(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
+
+
+def git_tracked_files_or_skip() -> set[str]:
+    result = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, check=False, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        pytest.skip("requires Git metadata; GitHub source archives contain tracked files only")
+    return set(result.stdout.splitlines())
 
 
 def requirement_name(requirement: str) -> str:
@@ -152,7 +163,7 @@ def test_python_project_metadata_matches_open_source_identity() -> None:
 
     for expected in [
         'name = "dueflow"',
-        'version = "0.1.0"',
+        'version = "0.1.1"',
         'license = { text = "MIT" }',
         'Homepage = "https://github.com/Ustinian5/DueFlow#readme"',
         'Repository = "https://github.com/Ustinian5/DueFlow"',
@@ -194,6 +205,22 @@ def test_package_lock_root_matches_desktop_package_manifest() -> None:
     assert lock_root["version"] == package_json["version"]
     assert lock_root["dependencies"] == package_json["dependencies"]
     assert lock_root["devDependencies"] == package_json["devDependencies"]
+
+
+def test_product_versions_stay_in_sync() -> None:
+    pyproject = tomllib.loads(read_text("pyproject.toml"))
+    package_json = json.loads(read_text("desktop/package.json"))
+    tauri_config = json.loads(read_text("desktop/src-tauri/tauri.conf.json"))
+    cargo_manifest = tomllib.loads(read_text("desktop/src-tauri/Cargo.toml"))
+
+    versions = {
+        pyproject["project"]["version"],
+        package_json["version"],
+        tauri_config["version"],
+        cargo_manifest["package"]["version"],
+    }
+
+    assert versions == {"0.1.1"}
 
 
 def test_tauri_security_policy_is_explicit_and_local_first() -> None:
@@ -252,8 +279,7 @@ def test_gitignore_excludes_local_private_and_generated_artifacts() -> None:
 
 
 def test_git_tracked_files_exclude_private_and_generated_artifacts() -> None:
-    result = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True)
-    tracked_files = set(result.stdout.splitlines())
+    tracked_files = git_tracked_files_or_skip()
     allowed_generated_examples = {
         "README.pdf",
         "docs/images/.gitkeep",
@@ -285,10 +311,9 @@ def test_git_tracked_files_exclude_private_and_generated_artifacts() -> None:
 
 
 def test_git_tracked_text_files_do_not_contain_obvious_secret_values() -> None:
-    result = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True)
     findings = []
 
-    for raw_path in result.stdout.splitlines():
+    for raw_path in git_tracked_files_or_skip():
         path = ROOT / raw_path
         if not path.exists():
             continue
@@ -390,7 +415,7 @@ def test_changelog_and_roadmap_describe_public_project_status() -> None:
     changelog = read_text("CHANGELOG.md")
     roadmap = read_text("ROADMAP.md")
 
-    for expected in ["Unreleased", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
+    for expected in ["Unreleased", "0.1.1", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
         assert expected in changelog
 
     for expected in ["Current Focus", "Near-Term Improvements", "Non-Goals For Now", "pet-first"]:

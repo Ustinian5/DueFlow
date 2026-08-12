@@ -8,6 +8,12 @@ This project follows a pragmatic pre-1.0 process: entries are grouped by the dat
 
 No changes yet.
 
+## [0.1.1] - 2026-08-13
+
+### Fixed
+
+- Git-aware hygiene checks now skip with an explicit reason when Git metadata is absent, so GitHub source archives run the applicable test suite instead of failing on `git ls-files`.
+
 ## [0.1.0] - 2026-08-13
 
 DueFlow's first public source release establishes the local-first deadline workflow, desktop companion, and reproducible development gates.
@@ -46,5 +52,6 @@ DueFlow's first public source release establishes the local-first deadline workf
 - The repository documents an unsigned local macOS `.app` packaging path for development and review.
 - Public macOS binary distribution remains gated on Developer ID signing, notarization, and stapling.
 
-[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Ustinian5/DueFlow/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.0

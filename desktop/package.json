@@ -1,6 +1,6 @@
 {
   "name": "dueflow-desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "DueFlow Desktop local-first DDL assistant with a desktop pet interface",
   "license": "MIT",
