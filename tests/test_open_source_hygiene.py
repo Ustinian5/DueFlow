@@ -164,7 +164,7 @@ def test_python_project_metadata_matches_open_source_identity() -> None:
 
     for expected in [
         'name = "dueflow"',
-        'version = "0.1.2"',
+        'version = "0.1.3"',
         'license = { text = "MIT" }',
         'Homepage = "https://github.com/Ustinian5/DueFlow#readme"',
         'Repository = "https://github.com/Ustinian5/DueFlow"',
@@ -231,7 +231,7 @@ def test_product_versions_stay_in_sync() -> None:
         cargo_manifest["package"]["version"],
     }
 
-    assert versions == {"0.1.2"}
+    assert versions == {"0.1.3"}
 
 
 def test_tauri_security_policy_is_explicit_and_local_first() -> None:
@@ -432,7 +432,7 @@ def test_changelog_and_roadmap_describe_public_project_status() -> None:
     changelog = read_text("CHANGELOG.md")
     roadmap = read_text("ROADMAP.md")
 
-    for expected in ["Unreleased", "0.1.2", "0.1.1", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
+    for expected in ["Unreleased", "0.1.3", "0.1.1", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
         assert expected in changelog
 
     for expected in ["Current Focus", "Near-Term Improvements", "Non-Goals For Now", "pet-first"]:

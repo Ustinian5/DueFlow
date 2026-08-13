@@ -8,6 +8,17 @@ This project follows a pragmatic pre-1.0 process: entries are grouped by the dat
 
 No changes yet.
 
+## [0.1.3] - 2026-08-13
+
+### Fixed
+
+- Plain semantic-version tags now publish as the repository's latest GitHub release, while suffixed tags such as `v0.1.3-rc.1` remain prereleases.
+- Re-running a tagged publisher now reconciles the release title, latest flag, and prerelease flag instead of only replacing assets.
+
+### Distribution
+
+- v0.1.3 keeps the verified native Apple Silicon and Intel self-contained bundles. They remain unsigned and unnotarized developer builds with explicit checksums, manifests, bundled-backend self-checks, and preflight evidence.
+
 ## [0.1.2] - 2026-08-13
 
 ### Added
@@ -69,7 +80,8 @@ DueFlow's first public source release establishes the local-first deadline workf
 - The repository documents an unsigned local macOS `.app` packaging path for development and review.
 - Public macOS binary distribution remains gated on Developer ID signing, notarization, and stapling.
 
-[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Ustinian5/DueFlow/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Ustinian5/DueFlow/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ustinian5/DueFlow/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.0

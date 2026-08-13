@@ -80,4 +80,14 @@ def test_ci_builds_and_publishes_both_macos_preview_architectures() -> None:
     assert "needs: [python, desktop, tauri, macos-preview]" in workflow
     assert "contents: write" in workflow
     assert "gh release create" in workflow
+    assert 'if [[ "$GITHUB_REF_NAME" == *-* ]]' in workflow
+    assert "IS_PRERELEASE=true" in workflow
+    assert "IS_PRERELEASE=false" in workflow
     assert "--prerelease" in workflow
+    assert "-F prerelease=false" in workflow
+    assert "-F prerelease=true" in workflow
+    assert "-F make_latest=false" in workflow
+    assert "-F make_latest=true" in workflow
+    assert "--latest=false" in workflow
+    assert "--latest" in workflow
+    assert "--verify-tag" in workflow

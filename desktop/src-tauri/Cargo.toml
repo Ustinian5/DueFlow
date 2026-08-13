@@ -1,6 +1,6 @@
 [package]
 name = "dueflow_desktop"
-version = "0.1.2"
+version = "0.1.3"
 description = "DueFlow Desktop local DDL assistant"
 authors = ["DueFlow Contributors"]
 license = "MIT"
