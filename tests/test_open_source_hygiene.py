@@ -432,7 +432,7 @@ def test_changelog_and_roadmap_describe_public_project_status() -> None:
     changelog = read_text("CHANGELOG.md")
     roadmap = read_text("ROADMAP.md")
 
-    for expected in ["Unreleased", "0.1.3", "0.1.1", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
+    for expected in ["Unreleased", "0.1.3", "0.1.2", "0.1.1", "0.1.0", "Tauri desktop shell", "Diagnostics omit raw Inbox text"]:
         assert expected in changelog
 
     for expected in ["Current Focus", "Near-Term Improvements", "Non-Goals For Now", "pet-first"]:
