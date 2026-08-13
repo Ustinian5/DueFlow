@@ -13,12 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docs" / "site"
 ZH_SITE = SITE / "zh"
 ARM64_PREVIEW_DOWNLOAD = (
-    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/"
-    "DueFlow-Desktop_0.1.3_arm64.app.zip"
+    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/"
+    "DueFlow-Desktop_0.1.4_arm64.app.zip"
 )
 INTEL_PREVIEW_DOWNLOAD = (
-    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/"
-    "DueFlow-Desktop_0.1.3_x86_64.app.zip"
+    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/"
+    "DueFlow-Desktop_0.1.4_x86_64.app.zip"
 )
 PREVIEW_DOWNLOADS = (ARM64_PREVIEW_DOWNLOAD, INTEL_PREVIEW_DOWNLOAD)
 
@@ -110,7 +110,7 @@ def test_pages_site_has_search_and_social_metadata() -> None:
     assert keyed["twitter:card"] == "summary_large_image"
     assert 'rel="canonical" href="https://ustinian5.github.io/DueFlow/"' in html
     assert '"@type": "SoftwareApplication"' in html
-    assert '"softwareVersion": "0.1.3"' in html
+    assert '"softwareVersion": "0.1.4"' in html
 
 
 def test_simplified_chinese_site_has_localized_search_metadata() -> None:
@@ -174,7 +174,7 @@ def test_pages_site_links_and_assets_are_valid() -> None:
 
     assert external_hosts == {"github.com"}
     assert "https://github.com/Ustinian5/DueFlow" in parser.links
-    assert "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.3" in parser.links
+    assert "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4" in parser.links
 
 
 def test_simplified_chinese_site_links_and_assets_are_valid() -> None:

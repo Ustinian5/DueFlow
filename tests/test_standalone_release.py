@@ -53,7 +53,12 @@ def test_release_packaging_embeds_verified_sidecar() -> None:
     assert "--contents-directory .dueflow-backend" in build_script
     assert 'BACKEND_FILE_NAME="dueflow-backend"' in package_script
     assert 'Contents/MacOS/$BACKEND_FILE_NAME' in package_script
-    assert 'Contents/Frameworks' in package_script
+    assert 'rm -rf "$APP_PATH"' in package_script
+    assert 'Contents/Resources/.dueflow-backend' in package_script
+    assert 'BACKEND_SUPPORT_LINK_PATH="$APP_PATH/Contents/Frameworks"' in package_script
+    assert 'ln -s "Resources/.dueflow-backend" "$BACKEND_SUPPORT_LINK_PATH"' in package_script
+    assert "/usr/bin/codesign --force --sign - --timestamp=none" in package_script
+    assert "/usr/bin/codesign --verify --deep --strict" in package_script
     assert "BACKEND_SHA" in package_script
     assert 'BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}"' in package_script
     assert 'BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}_${STAMP}"' not in package_script

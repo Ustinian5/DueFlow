@@ -47,8 +47,9 @@ Use this checklist before publishing a GitHub release, handing off a local build
 
 - [ ] Local macOS packaging uses `cd desktop && npm run release:mac`.
 - [ ] The generated `.sha256` file verifies with `(cd desktop/release && shasum -a 256 -c *.sha256)`.
-- [ ] The extracted app contains executable `Contents/MacOS/dueflow-backend` and its private `Contents/Frameworks` runtime; `dueflow-backend --self-check` returns `status=ok` with all required desktop routes.
-- [ ] The release manifest records the preflight summary plus the bundled backend SHA256, byte size, and self-check result.
+- [ ] The extracted app contains executable `Contents/MacOS/dueflow-backend`, its private runtime at `Contents/Resources/.dueflow-backend`, and a `Contents/Frameworks -> Resources/.dueflow-backend` compatibility symlink; `dueflow-backend --self-check` returns `status=ok` with all required desktop routes.
+- [ ] `/usr/bin/codesign --verify --deep --strict` accepts the extracted app bundle after the backend is injected.
+- [ ] The release manifest records the preflight summary plus the verified ad-hoc seal, runtime layout, bundled backend SHA256, byte size, and self-check result.
 - [ ] The bundled backend SHA256 and byte size match the extracted release artifact exactly.
 - [ ] A tagged developer prerelease contains exactly two `.app.zip` files, two `.sha256` files, and two `.manifest.json` files covering `arm64` and `x86_64`.
 - [ ] If publishing beyond local development, complete Developer ID signing, notarization, stapling, and any DMG packaging outside the unsigned local path.

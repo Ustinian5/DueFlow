@@ -8,6 +8,18 @@ This project follows a pragmatic pre-1.0 process: entries are grouped by the dat
 
 No changes yet.
 
+## [0.1.4] - 2026-08-13
+
+### Fixed
+
+- The standalone backend is now injected before a final ad-hoc app-bundle seal, fixing the invalid resource envelope produced when v0.1.3 modified the Tauri bundle after signing.
+- Backend support files now live under `Contents/Resources/.dueflow-backend`, with a compatibility symlink at `Contents/Frameworks` for the PyInstaller launcher.
+
+### Distribution
+
+- Packaging now runs strict `codesign --verify --deep --strict` validation before archiving, and CI verifies the extracted archive again on both native macOS architectures.
+- v0.1.4 remains an unsigned, unnotarized developer preview; its manifest explicitly records the verified ad-hoc seal and backend runtime layout.
+
 ## [0.1.3] - 2026-08-13
 
 ### Fixed
@@ -80,7 +92,8 @@ DueFlow's first public source release establishes the local-first deadline workf
 - The repository documents an unsigned local macOS `.app` packaging path for development and review.
 - Public macOS binary distribution remains gated on Developer ID signing, notarization, and stapling.
 
-[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/Ustinian5/DueFlow/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Ustinian5/DueFlow/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Ustinian5/DueFlow/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ustinian5/DueFlow/compare/v0.1.0...v0.1.1

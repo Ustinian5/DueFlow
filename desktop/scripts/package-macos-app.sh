@@ -29,7 +29,8 @@ fi
 BACKEND_BUILD_PATH="$DESKTOP_DIR/src-tauri/binaries/dueflow-backend-$TARGET_TRIPLE"
 BACKEND_SUPPORT_BUILD_PATH="$DESKTOP_DIR/src-tauri/binaries/.dueflow-backend"
 BACKEND_APP_PATH="$APP_PATH/Contents/MacOS/$BACKEND_FILE_NAME"
-BACKEND_SUPPORT_APP_PATH="$APP_PATH/Contents/Frameworks"
+BACKEND_SUPPORT_APP_PATH="$APP_PATH/Contents/Resources/.dueflow-backend"
+BACKEND_SUPPORT_LINK_PATH="$APP_PATH/Contents/Frameworks"
 
 cd "$DESKTOP_DIR"
 rm -f "$PREFLIGHT_SUMMARY_PATH" "$BACKEND_SELF_CHECK_PATH"
@@ -41,6 +42,7 @@ else
 fi
 
 bash scripts/build-backend-sidecar.sh "$BACKEND_BUILD_PATH"
+rm -rf "$APP_PATH"
 npm run tauri:build
 
 if [[ ! -d "$APP_PATH" ]]; then
@@ -49,11 +51,24 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 install -m 755 "$BACKEND_BUILD_PATH" "$BACKEND_APP_PATH"
+if [[ -e "$BACKEND_SUPPORT_LINK_PATH" || -L "$BACKEND_SUPPORT_LINK_PATH" ]]; then
+  echo "Refusing to replace an existing backend runtime path: $BACKEND_SUPPORT_LINK_PATH" >&2
+  exit 1
+fi
 mkdir -p "$BACKEND_SUPPORT_APP_PATH"
 cp -R "$BACKEND_SUPPORT_BUILD_PATH/." "$BACKEND_SUPPORT_APP_PATH/"
+ln -s "Resources/.dueflow-backend" "$BACKEND_SUPPORT_LINK_PATH"
 "$BACKEND_APP_PATH" --self-check >"$BACKEND_SELF_CHECK_PATH"
 BACKEND_SHA="$(shasum -a 256 "$BACKEND_APP_PATH" | awk '{print $1}')"
 BACKEND_SIZE="$(stat -f%z "$BACKEND_APP_PATH")"
+
+# Tauri seals the app before the standalone backend is injected. Re-seal the
+# completed bundle so the final archive has a valid resource envelope while
+# remaining an explicitly unsigned/unnotarized developer preview.
+/usr/bin/codesign --force --sign - --timestamp=none \
+  --preserve-metadata=identifier,entitlements,requirements,flags,runtime \
+  "$APP_PATH"
+/usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
 rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
@@ -90,4 +105,5 @@ echo "SHA256: $ZIP_SHA"
 echo "Manifest: $MANIFEST_PATH"
 echo "Bundled backend: $BACKEND_APP_PATH"
 echo "Bundled backend support: $BACKEND_SUPPORT_APP_PATH"
+echo "Bundled backend runtime link: $BACKEND_SUPPORT_LINK_PATH -> $(readlink "$BACKEND_SUPPORT_LINK_PATH")"
 echo "Bundled backend SHA256: $BACKEND_SHA"

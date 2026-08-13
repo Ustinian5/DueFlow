@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml"><img alt="CI" src="https://github.com/Ustinian5/DueFlow/actions/workflows/test.yml/badge.svg"></a>
   <a href="https://ustinian5.github.io/DueFlow/zh/"><img alt="中文项目站" src="https://img.shields.io/badge/项目站-简体中文-ff4b5c"></a>
-  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.3"><img alt="Apple Silicon 与 Intel 开发者预览版" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20%2B%20Intel-111111?logo=apple"></a>
+  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4"><img alt="Apple Silicon 与 Intel 开发者预览版" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20%2B%20Intel-111111?logo=apple"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white">
   <img alt="本地优先" src="https://img.shields.io/badge/数据-本地优先-3DDC97">
@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="https://ustinian5.github.io/DueFlow/zh/">中文项目站</a> ·
-  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.3">下载预览版</a> ·
+  <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4">下载预览版</a> ·
   <a href="#60-秒本地演示">60 秒演示</a> ·
   <a href="#桌面开发">桌面开发</a> ·
   <a href="docs/product_requirements.md">产品需求</a> ·
@@ -35,8 +35,8 @@
 
 <p align="center">
   <a href="https://ustinian5.github.io/DueFlow/zh/#demo"><strong>打开 60 秒浏览器样例 →</strong></a> ·
-  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/DueFlow-Desktop_0.1.3_arm64.app.zip"><strong>下载 Apple Silicon 版</strong></a> ·
-  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/DueFlow-Desktop_0.1.3_x86_64.app.zip"><strong>下载 Intel 版</strong></a>
+  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_arm64.app.zip"><strong>下载 Apple Silicon 版</strong></a> ·
+  <a href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_x86_64.app.zip"><strong>下载 Intel 版</strong></a>
 </p>
 
 <a href="https://ustinian5.github.io/DueFlow/zh/#demo">
@@ -89,7 +89,7 @@ processed=3 tasks=3 plans=17 risks=5
 
 ## 当前状态
 
-DueFlow `0.1.3` 已可用于本地开发和开源审查。原生 Apple Silicon 与 Intel 开发者预览版均为自包含 `.app.zip`：仅绑定回环地址的本地 API 已作为 sidecar 打包，测试者运行时不需要 Python 或 Conda。预览版未签名、未公证，分发边界记录在发布指南中。
+DueFlow `0.1.4` 已可用于本地开发和开源审查。原生 Apple Silicon 与 Intel 开发者预览版均为自包含 `.app.zip`：仅绑定回环地址的本地 API 已作为 sidecar 打包，测试者运行时不需要 Python 或 Conda。预览版具有已验证的 macOS 临时资源封装，但仍未使用 Developer ID 签名且未公证；分发边界记录在发布指南中。
 
 桌面架构采用独立的 Tauri、Python 和 React 实现。OpenPets 仅用于交互与架构研究；DueFlow 不依赖 OpenPets，也不会导入其软件包、代码或素材。
 
@@ -244,7 +244,7 @@ npm run release:mac
 
 ### 下载 macOS 开发者预览版
 
-请从 [DueFlow v0.1.3](https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.3) 下载原生 [Apple Silicon](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/DueFlow-Desktop_0.1.3_arm64.app.zip) 或 [Intel](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.3/DueFlow-Desktop_0.1.3_x86_64.app.zip) `.app.zip`。每种架构均提供独立校验和与发布清单；清单记录内置后端哈希值和打包时自检结果。开发者预览版未签名、未公证，仅适合接受开源开发构建边界的测试者。
+请从 [DueFlow v0.1.4](https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4) 下载原生 [Apple Silicon](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_arm64.app.zip) 或 [Intel](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_x86_64.app.zip) `.app.zip`。每种架构均提供独立校验和与发布清单；清单记录内置后端哈希值、打包时自检结果和已验证的临时资源封装。开发者预览版未使用 Developer ID 签名且未公证，仅适合接受开源开发构建边界的测试者。
 
 发布脚本会构建并自检独立的本地 API sidecar，运行预检、构建 Tauri 应用、验证 `.app` 包，并生成：
 

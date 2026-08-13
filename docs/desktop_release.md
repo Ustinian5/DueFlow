@@ -19,13 +19,13 @@ cd desktop
 DUEFLOW_PYTHON="$(conda run -n dueflow python -c 'import sys; print(sys.executable)')" npm run release:mac
 ```
 
-The script runs API preflight, builds and self-checks a PyInstaller backend sidecar, runs `npm run tauri:build`, installs the launcher at `DueFlow Desktop.app/Contents/MacOS/dueflow-backend` with its private runtime under `Contents/Frameworks`, verifies the generated `.app` bundle, and creates:
+The script runs API preflight, builds and self-checks a PyInstaller backend sidecar, runs `npm run tauri:build`, installs the launcher at `DueFlow Desktop.app/Contents/MacOS/dueflow-backend`, stores its private runtime under `Contents/Resources/.dueflow-backend`, and exposes the runtime through a compatibility symlink at `Contents/Frameworks`. It then applies an ad-hoc seal to the completed app, verifies the resource envelope strictly, and creates:
 
 - `desktop/release/DueFlow-Desktop_<version>_<arch>.app.zip`
 - `desktop/release/*.sha256`
 - `desktop/release/*.manifest.json`
 
-The stable bundle name lets README and project-site links remain valid for the lifetime of a version. The manifest is written by `desktop/scripts/write-release-manifest.mjs`; it retains the UTC build timestamp as provenance and records product name, version, architecture, bundle file, SHA256, byte size, signing/notarization flags, the preflight summary, and the bundled backend launcher/runtime names, SHA256, byte size, and self-check result.
+The stable bundle name lets README and project-site links remain valid for the lifetime of a version. The manifest is written by `desktop/scripts/write-release-manifest.mjs`; it retains the UTC build timestamp as provenance and records product name, version, architecture, bundle file, SHA256, byte size, signing/notarization flags, the verified ad-hoc seal and runtime layout, the preflight summary, and the bundled backend launcher/runtime names, SHA256, byte size, and self-check result.
 
 The packaged app starts that sibling backend directly and binds it to `127.0.0.1`. A tester running the packaged `.app` does not need Python, Conda, a source checkout, or an API key. Source development keeps the existing Conda-based fallback when no bundled sidecar is present.
 
@@ -44,11 +44,11 @@ The `test` workflow uses the same packaging script to build self-contained previ
 - `macos-15` produces an Apple Silicon `arm64` bundle.
 - `macos-15-intel` produces an Intel `x86_64` bundle.
 
-The preview matrix runs for manual workflow dispatches, `codex/release-*` validation branches, and `v*` tags. Each runner starts an isolated loopback API, performs the real preflight, builds and self-checks its native PyInstaller sidecar, packages the Tauri app, verifies the generated checksum and manifest architecture, and uploads the three release files as a 14-day Actions artifact.
+The preview matrix runs for manual workflow dispatches, `codex/release-*` validation branches, and `v*` tags. Each runner starts an isolated loopback API, performs the real preflight, builds and self-checks its native PyInstaller sidecar, packages the Tauri app, extracts the archive, verifies the symlinked runtime layout and strict code-signing resource envelope, verifies the generated checksum and manifest architecture, and uploads the three release files as a 14-day Actions artifact.
 
 For a `v*` tag, the publish job waits for the Python, desktop, Rust, and both macOS preview jobs. It downloads both architecture artifacts, verifies exactly two app archives, two checksums, and two manifests, rechecks both digests and architecture identities, then creates or updates a GitHub prerelease. Branch and manual runs only produce Actions artifacts; they do not create a release.
 
-Tag previews keep `signed: false` and `notarized: false` in each manifest. The release title identifies them as developer previews, while the checksum, bundled-backend self-check, and preflight evidence remain independently verifiable.
+Tag previews keep `signed: false` and `notarized: false` in each manifest because the ad-hoc seal is not a Developer ID signature. The release title identifies them as developer previews, while the strict bundle verification, checksum, bundled-backend self-check, and preflight evidence remain independently verifiable.
 
 ## Current Distribution Boundary
 
@@ -59,7 +59,11 @@ Current manifest flags:
 ```json
 {
   "signed": false,
-  "notarized": false
+  "notarized": false,
+  "integrity": {
+    "code_directory": "ad-hoc",
+    "codesign_verified": true
+  }
 }
 ```
 
@@ -93,6 +97,8 @@ cd ..
 npm run release:mac
 ```
 
+The release command must fail if `codesign --verify --deep --strict` rejects the completed app bundle.
+
 `npm run test:smoke` starts an isolated local desktop API with a temporary database, validates the Tauri window configuration, and runs the core HTTP workflow: file intake, duplicate detection, task generation or update, task status update, exports, database backup, restore and diagnostics export. It also asserts that diagnostics output does not include raw Inbox text or task titles. It does not mutate the user's real app data.
 
 `cargo test` covers the Tauri shell's local pet import safety boundaries, including manifest source confinement, declared asset copying, thumbnail/state asset inclusion, and rollback behavior when an import fails after a previous active copy exists.
@@ -120,6 +126,8 @@ Then extract it into a temporary directory and verify the bundled backend indepe
 
 ```bash
 ditto -x -k desktop/release/*.app.zip /tmp/dueflow-preview
+/usr/bin/codesign --verify --deep --strict --verbose=2 /tmp/dueflow-preview/DueFlow\ Desktop.app
+test "$(readlink /tmp/dueflow-preview/DueFlow\ Desktop.app/Contents/Frameworks)" = "Resources/.dueflow-backend"
 /tmp/dueflow-preview/DueFlow\ Desktop.app/Contents/MacOS/dueflow-backend --self-check
 ```
 

@@ -53,6 +53,13 @@ export async function writeReleaseManifest({
     bytes: parseBytes(bytes),
     signed: false,
     notarized: false,
+    integrity: {
+      code_directory: "ad-hoc",
+      codesign_verified: true,
+      verification_command: "codesign --verify --deep --strict",
+      backend_support_directory: "Contents/Resources/.dueflow-backend",
+      backend_runtime_link: "Contents/Frameworks",
+    },
     backend: {
       bundled: true,
       file: backend,

@@ -203,6 +203,12 @@ jobs:
         run: |
           cd desktop/release
           shasum -a 256 -c ./*.sha256
+          VERIFY_DIR="$(mktemp -d)"
+          trap 'rm -rf "$VERIFY_DIR"' EXIT
+          ditto -x -k ./*.app.zip "$VERIFY_DIR"
+          test -L "$VERIFY_DIR/DueFlow Desktop.app/Contents/Frameworks"
+          test "$(readlink "$VERIFY_DIR/DueFlow Desktop.app/Contents/Frameworks")" = "Resources/.dueflow-backend"
+          codesign --verify --deep --strict --verbose=2 "$VERIFY_DIR/DueFlow Desktop.app"
           python - <<'PY'
           import glob
           import json
@@ -215,6 +221,8 @@ jobs:
           assert manifest["arch"] == os.environ["EXPECTED_ARCH"], manifest
           assert manifest["backend"]["bundled"] is True, manifest
           assert manifest["backend"]["self_check"]["status"] == "ok", manifest
+          assert manifest["integrity"]["code_directory"] == "ad-hoc", manifest
+          assert manifest["integrity"]["codesign_verified"] is True, manifest
           assert manifest["preflight"]["summary"]["error"] == 0, manifest
           print(
               f"verified arch={manifest['arch']} "
@@ -270,6 +278,7 @@ jobs:
                   manifests.append(json.load(handle))
           assert {manifest["arch"] for manifest in manifests} == {"arm64", "x86_64"}, manifests
           assert all(manifest["backend"]["self_check"]["status"] == "ok" for manifest in manifests)
+          assert all(manifest["integrity"]["codesign_verified"] is True for manifest in manifests)
           assert all(manifest["preflight"]["summary"]["error"] == 0 for manifest in manifests)
           print("verified release architectures=arm64,x86_64")
           PY

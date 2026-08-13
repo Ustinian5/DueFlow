@@ -75,6 +75,13 @@ async function testWritesTraceableManifest() {
   assert.equal(persisted.bytes, 4096);
   assert.equal(persisted.signed, false);
   assert.equal(persisted.notarized, false);
+  assert.deepEqual(persisted.integrity, {
+    code_directory: "ad-hoc",
+    codesign_verified: true,
+    verification_command: "codesign --verify --deep --strict",
+    backend_support_directory: "Contents/Resources/.dueflow-backend",
+    backend_runtime_link: "Contents/Frameworks",
+  });
   assert.equal(persisted.backend.bundled, true);
   assert.equal(persisted.backend.file, "dueflow-backend");
   assert.equal(persisted.backend.runtime_directory, "../Frameworks");
