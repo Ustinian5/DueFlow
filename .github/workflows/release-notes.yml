@@ -1,0 +1,53 @@
+name: release-notes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-notes/v0.1.4.md"
+      - ".github/workflows/release-notes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dueflow-release-notes-v0.1.4
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync v0.1.4 release notes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate release note
+        env:
+          NOTES_PATH: .github/release-notes/v0.1.4.md
+        run: |
+          test -s "$NOTES_PATH"
+          test "$(wc -c < "$NOTES_PATH")" -ge 800
+          grep -Fq 'DueFlow v0.1.4' "$NOTES_PATH"
+          grep -Fq 'unsigned and not notarized developer preview' "$NOTES_PATH"
+
+      - name: Sync and verify release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v0.1.4
+          NOTES_PATH: .github/release-notes/v0.1.4.md
+        run: |
+          gh release edit "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "DueFlow v0.1.4" \
+            --notes-file "$NOTES_PATH" \
+            --latest
+
+          expected="$(cat "$NOTES_PATH")"
+          actual="$(gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json body \
+            --jq .body)"
+          test "$actual" = "$expected"
+          echo "RELEASE_NOTES_RESULT=tag=$RELEASE_TAG;body_verified=true"
