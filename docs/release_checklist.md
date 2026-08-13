@@ -52,4 +52,5 @@ Use this checklist before publishing a GitHub release, handing off a local build
 - [ ] The release manifest records the preflight summary plus the verified ad-hoc seal, runtime layout, bundled backend SHA256, byte size, and self-check result.
 - [ ] The bundled backend SHA256 and byte size match the extracted release artifact exactly.
 - [ ] A tagged developer prerelease contains exactly two `.app.zip` files, two `.sha256` files, and two `.manifest.json` files covering `arm64` and `x86_64`.
+- [ ] `Casks/dueflow.rb` matches the current stable version and both published archive SHA256 values; a clean remote tap installs and uninstalls the matching architecture successfully.
 - [ ] If publishing beyond local development, complete Developer ID signing, notarization, stapling, and any DMG packaging outside the unsigned local path.

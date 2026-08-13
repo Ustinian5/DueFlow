@@ -253,6 +253,15 @@ What the gates cover:
 
 Download the native [Apple Silicon](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_arm64.app.zip) or [Intel](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_x86_64.app.zip) `.app.zip` from [DueFlow v0.1.4](https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4). Each architecture has its own checksum and release manifest; the manifest records the bundled backend hash, packaging-time self-check, and verified ad-hoc resource seal. These developer previews are not Developer ID signed or notarized; use them only if you are comfortable testing an open-source development build.
 
+Homebrew can install the matching architecture from this repository's versioned, checksum-pinned cask:
+
+```bash
+brew tap ustinian5/dueflow https://github.com/Ustinian5/DueFlow.git
+brew install --cask ustinian5/dueflow/dueflow
+```
+
+The cask preserves macOS quarantine and repeats the developer-preview notice. Review the app in **System Settings → Privacy & Security** if macOS requests confirmation before the first launch.
+
 For local macOS packaging:
 
 ```bash

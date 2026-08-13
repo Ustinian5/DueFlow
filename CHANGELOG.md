@@ -6,7 +6,9 @@ This project follows a pragmatic pre-1.0 process: entries are grouped by the dat
 
 ## [Unreleased]
 
-No changes yet.
+### Added
+
+- A repository-hosted Homebrew cask now installs the checksum-pinned v0.1.4 Apple Silicon or Intel preview while preserving macOS quarantine.
 
 ## [0.1.4] - 2026-08-13
 

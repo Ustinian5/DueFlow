@@ -246,6 +246,15 @@ npm run release:mac
 
 请从 [DueFlow v0.1.4](https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.4) 下载原生 [Apple Silicon](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_arm64.app.zip) 或 [Intel](https://github.com/Ustinian5/DueFlow/releases/download/v0.1.4/DueFlow-Desktop_0.1.4_x86_64.app.zip) `.app.zip`。每种架构均提供独立校验和与发布清单；清单记录内置后端哈希值、打包时自检结果和已验证的临时资源封装。开发者预览版未使用 Developer ID 签名且未公证，仅适合接受开源开发构建边界的测试者。
 
+Homebrew 可通过本仓库内带版本和校验和锁定的 cask 安装匹配当前 Mac 架构的版本：
+
+```bash
+brew tap ustinian5/dueflow https://github.com/Ustinian5/DueFlow.git
+brew install --cask ustinian5/dueflow/dueflow
+```
+
+cask 会保留 macOS 隔离属性并再次提示开发者预览版边界。如首次启动需要确认，请在 **系统设置 → 隐私与安全性** 中审查应用。
+
 发布脚本会构建并自检独立的本地 API sidecar，运行预检、构建 Tauri 应用、验证 `.app` 包，并生成：
 
 - `desktop/release/DueFlow-Desktop_<version>_<arch>.app.zip`
