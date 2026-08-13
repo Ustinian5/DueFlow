@@ -21,11 +21,11 @@ DUEFLOW_PYTHON="$(conda run -n dueflow python -c 'import sys; print(sys.executab
 
 The script runs API preflight, builds and self-checks a PyInstaller backend sidecar, runs `npm run tauri:build`, installs the launcher at `DueFlow Desktop.app/Contents/MacOS/dueflow-backend` with its private runtime under `Contents/Frameworks`, verifies the generated `.app` bundle, and creates:
 
-- `desktop/release/DueFlow-Desktop_<version>_<arch>_<timestamp>.app.zip`
+- `desktop/release/DueFlow-Desktop_<version>_<arch>.app.zip`
 - `desktop/release/*.sha256`
 - `desktop/release/*.manifest.json`
 
-The manifest is written by `desktop/scripts/write-release-manifest.mjs`. It records product name, version, architecture, timestamp, bundle file, SHA256, byte size, signing/notarization flags, the preflight summary, and the bundled backend launcher/runtime names, SHA256, byte size, and self-check result.
+The stable bundle name lets README and project-site links remain valid for the lifetime of a version. The manifest is written by `desktop/scripts/write-release-manifest.mjs`; it retains the UTC build timestamp as provenance and records product name, version, architecture, bundle file, SHA256, byte size, signing/notarization flags, the preflight summary, and the bundled backend launcher/runtime names, SHA256, byte size, and self-check result.
 
 The packaged app starts that sibling backend directly and binds it to `127.0.0.1`. A tester running the packaged `.app` does not need Python, Conda, a source checkout, or an API key. Source development keeps the existing Conda-based fallback when no bundled sidecar is present.
 
@@ -52,7 +52,7 @@ Tag previews keep `signed: false` and `notarized: false` in each manifest. The r
 
 ## Current Distribution Boundary
 
-The current release script intentionally ships an unsigned Apple Silicon developer-preview `.app.zip` instead of DMG because DMG packaging, Developer ID signing, and Apple notarization require release credentials and signing assets.
+The current release script intentionally ships unsigned native Apple Silicon and Intel developer-preview `.app.zip` files instead of DMG because DMG packaging, Developer ID signing, and Apple notarization require release credentials and signing assets.
 
 Current manifest flags:
 

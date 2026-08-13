@@ -10,7 +10,10 @@ RELEASE_DIR="$DESKTOP_DIR/release"
 VERSION="$(node -p "require('./package.json').version")"
 ARCH="$(uname -m)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}_${STAMP}"
+# Keep public asset names stable so release and project-site download links do
+# not change on every rebuild. The manifest retains STAMP as immutable build
+# provenance through its created_at field.
+BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}"
 ZIP_PATH="$RELEASE_DIR/${BASE_NAME}.app.zip"
 SHA_PATH="$ZIP_PATH.sha256"
 MANIFEST_PATH="$RELEASE_DIR/${BASE_NAME}.manifest.json"

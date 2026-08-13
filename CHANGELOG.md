@@ -8,6 +8,23 @@ This project follows a pragmatic pre-1.0 process: entries are grouped by the dat
 
 No changes yet.
 
+## [0.1.2] - 2026-08-13
+
+### Added
+
+- GitHub Actions now builds and verifies native self-contained macOS previews on both Apple Silicon (`arm64`) and Intel (`x86_64`) runners.
+- Tagged `v*` builds publish both app archives, architecture-specific checksums, and manifests only after Python, desktop, Rust, preflight, sidecar, and digest gates pass.
+
+### Changed
+
+- Release archives now use stable `DueFlow-Desktop_<version>_<arch>.app.zip` names while retaining the UTC build time inside each manifest, enabling durable direct-download links from the README and project site.
+- English and Simplified Chinese project surfaces now expose separate Apple Silicon and Intel download paths.
+- GitHub Actions dependencies use their Node 24-compatible major releases, and the desktop dependency lock passes the high-severity npm audit gate.
+
+### Distribution
+
+- v0.1.2 is an unsigned, unnotarized developer preview. Both native architecture bundles include the loopback-only backend and require neither Python nor Conda at runtime.
+
 ## [0.1.1] - 2026-08-13
 
 ### Fixed
@@ -52,6 +69,7 @@ DueFlow's first public source release establishes the local-first deadline workf
 - The repository documents an unsigned local macOS `.app` packaging path for development and review.
 - Public macOS binary distribution remains gated on Developer ID signing, notarization, and stapling.
 
-[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Ustinian5/DueFlow/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Ustinian5/DueFlow/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Ustinian5/DueFlow/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.0

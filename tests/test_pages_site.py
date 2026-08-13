@@ -12,11 +12,15 @@ from pypdf import PdfReader
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docs" / "site"
 ZH_SITE = SITE / "zh"
-PREVIEW_DOWNLOAD = (
-    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/"
-    "DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
+ARM64_PREVIEW_DOWNLOAD = (
+    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/"
+    "DueFlow-Desktop_0.1.2_arm64.app.zip"
 )
-PREVIEW_CHECKSUM = f"{PREVIEW_DOWNLOAD}.sha256"
+INTEL_PREVIEW_DOWNLOAD = (
+    "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/"
+    "DueFlow-Desktop_0.1.2_x86_64.app.zip"
+)
+PREVIEW_DOWNLOADS = (ARM64_PREVIEW_DOWNLOAD, INTEL_PREVIEW_DOWNLOAD)
 
 
 class SiteParser(HTMLParser):
@@ -64,6 +68,13 @@ def parse_site(path: Path | None = None) -> tuple[str, SiteParser]:
     return html, parser
 
 
+def parse_structured_data(path: Path | None = None) -> dict[str, object]:
+    html = (path or (SITE / "index.html")).read_text(encoding="utf-8")
+    match = re.search(r'<script type="application/ld\+json">\s*(.*?)\s*</script>', html, re.DOTALL)
+    assert match is not None
+    return json.loads(match.group(1))
+
+
 def test_pages_site_has_complete_static_bundle() -> None:
     required = {
         "index.html",
@@ -99,7 +110,7 @@ def test_pages_site_has_search_and_social_metadata() -> None:
     assert keyed["twitter:card"] == "summary_large_image"
     assert 'rel="canonical" href="https://ustinian5.github.io/DueFlow/"' in html
     assert '"@type": "SoftwareApplication"' in html
-    assert '"softwareVersion": "0.1.1"' in html
+    assert '"softwareVersion": "0.1.2"' in html
 
 
 def test_simplified_chinese_site_has_localized_search_metadata() -> None:
@@ -163,7 +174,7 @@ def test_pages_site_links_and_assets_are_valid() -> None:
 
     assert external_hosts == {"github.com"}
     assert "https://github.com/Ustinian5/DueFlow" in parser.links
-    assert "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1" in parser.links
+    assert "https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.2" in parser.links
 
 
 def test_simplified_chinese_site_links_and_assets_are_valid() -> None:
@@ -194,16 +205,24 @@ def test_pages_site_promotes_verified_standalone_preview() -> None:
     english, english_parser = parse_site()
     chinese, chinese_parser = parse_site(ZH_SITE / "index.html")
 
-    for html, parser in [(english, english_parser), (chinese, chinese_parser)]:
-        assert parser.links.count(PREVIEW_DOWNLOAD) == 2
-        assert PREVIEW_CHECKSUM in parser.links
-        assert html.count("data-preview-download") == 2
-        assert f'"downloadUrl": "{PREVIEW_DOWNLOAD}"' in html
-        assert '"operatingSystem": "macOS (Apple Silicon)"' in html
+    pages = [
+        (english, english_parser, parse_structured_data()),
+        (chinese, chinese_parser, parse_structured_data(ZH_SITE / "index.html")),
+    ]
+    for html, parser, structured_data in pages:
+        for download in PREVIEW_DOWNLOADS:
+            assert parser.links.count(download) == 2
+            assert f"{download}.sha256" in parser.links
+            assert f'"{download}"' in html
+        assert html.count("data-preview-download") == 4
+        assert structured_data["downloadUrl"] == list(PREVIEW_DOWNLOADS)
+        assert structured_data["operatingSystem"] == "macOS (Apple Silicon and Intel)"
 
     assert "Download for Apple Silicon" in english
+    assert "Download for Intel" in english
     assert "No Python or Conda at runtime" in english
     assert "下载 Apple Silicon 预览版" in chinese
+    assert "下载 Intel 预览版" in chinese
     assert "运行时无需 Python 或 Conda" in chinese
 
 

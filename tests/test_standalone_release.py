@@ -55,6 +55,9 @@ def test_release_packaging_embeds_verified_sidecar() -> None:
     assert 'Contents/MacOS/$BACKEND_FILE_NAME' in package_script
     assert 'Contents/Frameworks' in package_script
     assert "BACKEND_SHA" in package_script
+    assert 'BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}"' in package_script
+    assert 'BASE_NAME="DueFlow-Desktop_${VERSION}_${ARCH}_${STAMP}"' not in package_script
+    assert '--created-at "$STAMP"' in package_script
     assert 'const BACKEND_SIDECAR_NAME: &str = "dueflow-backend";' in rust_source
     assert '"bundled_sidecar"' in rust_source
 

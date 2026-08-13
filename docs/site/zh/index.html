@@ -44,11 +44,14 @@
         "@type": "SoftwareApplication",
         "name": "DueFlow",
         "applicationCategory": "ProductivityApplication",
-        "operatingSystem": "macOS (Apple Silicon)",
-        "softwareVersion": "0.1.1",
+        "operatingSystem": "macOS (Apple Silicon and Intel)",
+        "softwareVersion": "0.1.2",
         "inLanguage": "zh-CN",
         "url": "https://ustinian5.github.io/DueFlow/zh/",
-        "downloadUrl": "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip",
+        "downloadUrl": [
+          "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_arm64.app.zip",
+          "https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_x86_64.app.zip"
+        ],
         "codeRepository": "https://github.com/Ustinian5/DueFlow",
         "license": "https://opensource.org/license/mit",
         "isAccessibleForFree": true,
@@ -70,7 +73,7 @@
           <a href="#workflow">工作流</a>
           <a href="#demo">演示</a>
           <a href="#privacy">本地优先</a>
-          <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">v0.1.1</a>
+          <a href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.2">v0.1.2</a>
         </nav>
         <div class="header-actions">
           <a class="language-link" href="../" lang="en" hreflang="en">English</a>
@@ -83,7 +86,7 @@
       <section class="hero section-shell" id="top">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-copy">
-          <p class="eyebrow"><span class="status-dot"></span> 开源 · 本地优先 · v0.1.1</p>
+          <p class="eyebrow"><span class="status-dot"></span> 开源 · 本地优先 · v0.1.2</p>
           <h1>截止信息四处分散。<br><span>你的计划不该如此。</span></h1>
           <p class="hero-lede">
             DueFlow 将通知、截图、文件、粘贴文本和 Webhook 数据整理为结构化任务、倒排计划、
@@ -93,8 +96,13 @@
             <a
               class="button button-primary"
               data-preview-download
-              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_arm64.app.zip"
             >下载 Apple Silicon 预览版</a>
+            <a
+              class="button button-secondary"
+              data-preview-download
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_x86_64.app.zip"
+            >下载 Intel 预览版</a>
             <a class="button button-secondary" href="https://github.com/Ustinian5/DueFlow">在 GitHub 收藏 DueFlow</a>
             <a class="button button-ghost" href="#demo">运行 60 秒演示</a>
           </div>
@@ -286,21 +294,30 @@
       <section class="content-section section-shell">
         <div class="release-card">
           <div>
-            <p class="eyebrow">Apple Silicon 开发者预览版</p>
-            <h2>macOS 版 DueFlow v0.1.1</h2>
+            <p class="eyebrow">Apple Silicon + Intel 开发者预览版</p>
+            <h2>macOS 版 DueFlow v0.1.2</h2>
             <p>自包含 <code>.app.zip</code> 内置仅回环地址后端，运行时无需 Python 或 Conda。</p>
           </div>
           <div class="release-actions">
             <a
               class="button button-primary"
               data-preview-download
-              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip"
-            >下载预览版</a>
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_arm64.app.zip"
+            >Apple Silicon</a>
+            <a
+              class="button button-primary"
+              data-preview-download
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_x86_64.app.zip"
+            >Intel</a>
             <a
               class="button button-secondary"
-              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.1/DueFlow-Desktop_0.1.1_arm64_20260812T193208Z.app.zip.sha256"
-            >校验 SHA256</a>
-            <a class="button button-ghost" href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.1">版本说明</a>
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_arm64.app.zip.sha256"
+            >Apple Silicon SHA256</a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/Ustinian5/DueFlow/releases/download/v0.1.2/DueFlow-Desktop_0.1.2_x86_64.app.zip.sha256"
+            >Intel SHA256</a>
+            <a class="button button-ghost" href="https://github.com/Ustinian5/DueFlow/releases/tag/v0.1.2">版本说明</a>
           </div>
         </div>
       </section>

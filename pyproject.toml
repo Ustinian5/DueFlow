@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dueflow"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local-first DDL and schedule assistant with a desktop pet interface."
 readme = "README.md"
 requires-python = ">=3.11"
